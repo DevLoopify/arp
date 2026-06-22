@@ -38,6 +38,8 @@ yarn-error.*
 
 app-example
 
+.DS_Store
+
 # generated native folders
 /ios
 /android
