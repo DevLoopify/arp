@@ -4,6 +4,7 @@ import InputField from '../components/InputField';
 import PrimaryButton from '@/components/PrimaryButton';
 import TextButton from '@/components/TextButton';
 import { Link, router } from 'expo-router';
+import Colors from '@/constants/Colors';
 
 export default function LoginScreen() {
     const [email, setEmail] = useState('');
@@ -59,17 +60,17 @@ const styles = StyleSheet.create({
         flex: 1,
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: '#f8fafc',
+        backgroundColor: Colors.backgroundBase,
         padding: 24,
     },
     title: {
-        color: '#111827',
+        color: Colors.textPrimary,
         fontSize: 64,
         fontWeight: '800',
     },
     subtitle: {
         marginTop: 12,
-        color: '#4b5563',
+        color: Colors.textSecondary,
         fontSize: 16,
         textAlign: 'center',
         maxWidth: 280,
@@ -80,7 +81,7 @@ const styles = StyleSheet.create({
         gap: 12,
     },
     textButton: {
-        color: '#4b5563',
+        color: Colors.textSecondary,
         fontSize: 14,
         textAlign: 'right',
     },
@@ -90,11 +91,11 @@ const styles = StyleSheet.create({
         marginTop: 24,
     },
     registerHint: {
-        color: '#4b5563',
+        color: Colors.textSecondary,
         fontSize: 14,
     },
     registerLink: {
-        color: '#2563EB',
+        color: Colors.primary,
         fontSize: 14,
         fontWeight: '600',
     },

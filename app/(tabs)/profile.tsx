@@ -1,4 +1,5 @@
 import { StyleSheet, Text, View } from 'react-native';
+import Colors from '@/constants/Colors';
 
 export default function ProfileScreen() {
   return (
@@ -14,17 +15,17 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#ecfdf5',
+    backgroundColor: Colors.backgroundSubtle,
     padding: 24,
   },
   title: {
-    color: '#111827',
+    color: Colors.textPrimary,
     fontSize: 32,
     fontWeight: '800',
   },
   copy: {
     marginTop: 10,
-    color: '#4b5563',
+    color: Colors.textSecondary,
     fontSize: 16,
     textAlign: 'center',
   },

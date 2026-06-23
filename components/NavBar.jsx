@@ -1,6 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Colors from '@/constants/Colors';
 
 const TAB_DETAILS = {
   explore: {
@@ -58,7 +59,7 @@ export default function NavBar({ state, descriptors, navigation }) {
             <Ionicons
               name={isFocused ? details.activeIcon : details.icon}
               size={24}
-              color={isFocused ? '#F43378' : '#6b7280'}
+              color={isFocused ? Colors.accent : Colors.textMuted}
             />
             <Text style={[styles.label, isFocused && styles.activeLabel]}>{details.label}</Text>
           </Pressable>
@@ -75,7 +76,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-around',
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: '#d1d5db',
-    backgroundColor: '#fff',
+    backgroundColor: Colors.backgroundWhite,
     paddingTop: 10,
     paddingHorizontal: 12,
   },
@@ -87,11 +88,11 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   label: {
-    color: '#6b7280',
+    color: Colors.textMuted,
     fontSize: 12,
     fontWeight: '600',
   },
   activeLabel: {
-    color: '#F43378',
+    color: Colors.accent,
   },
 });
