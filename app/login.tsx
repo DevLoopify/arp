@@ -35,7 +35,7 @@ export default function LoginScreen() {
                     onPress={() => console.log('Forgot password pressed!')}
                     textStyle={styles.textButton}
                 />
-                <View style={{ marginTop: 64 }}>
+                <View style={{ marginTop: 36 }}>
                     <PrimaryButton
                         label="Log In"
                         onPress={() => console.log('Log In pressed! Email: ', email, 'Password: ', password)}
