@@ -2,6 +2,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Colors from '@/constants/Colors';
+import Typography from '@/constants/Typography';
 
 const TAB_DETAILS = {
   explore: {
@@ -88,9 +89,8 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   label: {
+    ...Typography.navLabel,
     color: Colors.textMuted,
-    fontSize: 12,
-    fontWeight: '600',
   },
   activeLabel: {
     color: Colors.accent,

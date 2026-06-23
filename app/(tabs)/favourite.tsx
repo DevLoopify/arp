@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 import Colors from '@/constants/Colors';
+import Typography from '@/constants/Typography';
 
 export default function FavouriteScreen() {
   return (
@@ -19,14 +20,13 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   title: {
+    ...Typography.screenTitle,
     color: Colors.textPrimary,
-    fontSize: 32,
-    fontWeight: '800',
   },
   copy: {
+    ...Typography.body,
     marginTop: 10,
     color: Colors.textSecondary,
-    fontSize: 16,
     textAlign: 'center',
   },
 });

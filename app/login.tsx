@@ -5,6 +5,7 @@ import PrimaryButton from '@/components/PrimaryButton';
 import TextButton from '@/components/TextButton';
 import { Link, router } from 'expo-router';
 import Colors from '@/constants/Colors';
+import Typography from '@/constants/Typography';
 
 export default function LoginScreen() {
     const [email, setEmail] = useState('');
@@ -64,14 +65,13 @@ const styles = StyleSheet.create({
         padding: 24,
     },
     title: {
+        ...Typography.display,
         color: Colors.textPrimary,
-        fontSize: 64,
-        fontWeight: '800',
     },
     subtitle: {
+        ...Typography.body,
         marginTop: 12,
         color: Colors.textSecondary,
-        fontSize: 16,
         textAlign: 'center',
         maxWidth: 280,
     },
@@ -81,8 +81,8 @@ const styles = StyleSheet.create({
         gap: 12,
     },
     textButton: {
+        ...Typography.caption,
         color: Colors.textSecondary,
-        fontSize: 14,
         textAlign: 'right',
     },
     registerRow: {
@@ -91,12 +91,11 @@ const styles = StyleSheet.create({
         marginTop: 24,
     },
     registerHint: {
+        ...Typography.caption,
         color: Colors.textSecondary,
-        fontSize: 14,
     },
     registerLink: {
+        ...Typography.link,
         color: Colors.primary,
-        fontSize: 14,
-        fontWeight: '600',
     },
 });

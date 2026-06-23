@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity } from 'react-native';
 import Colors from '@/constants/Colors';
+import Typography from '@/constants/Typography';
 
 export default function PrimaryButton({label, onPress}: {label: string, onPress: () => void}) {
     return (
@@ -18,8 +19,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     buttonText: {
+        ...Typography.button,
         color: Colors.textWhite,
-        fontSize: 16,
-        fontWeight: '600',
     },
 });
