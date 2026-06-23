@@ -1,4 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
+import Colors from '@/constants/Colors';
+import Typography from '@/constants/Typography';
 
 export default function ProfileScreen() {
   return (
@@ -14,18 +16,17 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#ecfdf5',
+    backgroundColor: Colors.backgroundSubtle,
     padding: 24,
   },
   title: {
-    color: '#111827',
-    fontSize: 32,
-    fontWeight: '800',
+    ...Typography.screenTitle,
+    color: Colors.textPrimary,
   },
   copy: {
+    ...Typography.body,
     marginTop: 10,
-    color: '#4b5563',
-    fontSize: 16,
+    color: Colors.textSecondary,
     textAlign: 'center',
   },
 });

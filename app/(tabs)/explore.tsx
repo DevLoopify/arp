@@ -1,5 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 import MapContainer from '../../components/MapContainer';
+import Colors from '@/constants/Colors';
+import Typography from '@/constants/Typography';
 
 const darmstadtRegion = {
   latitude: 49.8728,
@@ -45,25 +47,22 @@ export default function ExploreScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: Colors.backgroundBase,
     padding: 24,
   },
   eyebrow: {
-    color: '#F43378',
-    fontSize: 13,
-    fontWeight: '700',
-    textTransform: 'uppercase',
+    ...Typography.eyebrow,
+    color: Colors.accent,
   },
   title: {
+    ...Typography.sectionTitle,
     marginTop: 8,
-    color: '#111827',
-    fontSize: 34,
-    fontWeight: '800',
+    color: Colors.textPrimary,
   },
   copy: {
+    ...Typography.body,
     marginTop: 10,
-    color: '#4b5563',
-    fontSize: 16,
+    color: Colors.textSecondary,
   },
   mapPanel: {
     flex: 1,
