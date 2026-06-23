@@ -3,20 +3,29 @@ import { StyleSheet, Text, TextInput, TextInputBase, TouchableOpacity, View } fr
 import InputField from '../components/InputField';
 import PrimaryButton from '@/components/PrimaryButton';
 import TextButton from '@/components/TextButton';
-import { Link, router } from 'expo-router';
+import { Link } from 'expo-router';
 
-export default function LoginScreen() {
+export default function RegisterScreen() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [name, setName] = useState('');
 
     return (
         <View style={styles.container}>
             <Text style={styles.title}>ARP</Text>
             <Text style={styles.subtitle}>
-            Log in to your account and start finding the perfect place to work.
+            Nice to meet you! Create an account and start finding the perfect place to work.
             </Text>
 
             <View style={styles.form}>
+                <InputField
+                    label="Name"
+                    value={name}
+                    onChangeText={setName}
+                    secureTextEntry={false}
+                    keyboardType="default"
+                />
                 <InputField
                     label="E-Mail"
                     value={email}
@@ -31,22 +40,24 @@ export default function LoginScreen() {
                     secureTextEntry={true}
                     keyboardType="default"
                 />
-                <TextButton
-                    label="Forgot password?"
-                    onPress={() => console.log('Forgot password pressed!')}
-                    textStyle={styles.textButton}
+                <InputField
+                    label="Confirm Password"
+                    value={confirmPassword}
+                    onChangeText={setConfirmPassword}
+                    secureTextEntry={true}
+                    keyboardType="default"
                 />
-                <View style={{ marginTop: 36 }}>
+                <View style={{ marginTop: 24 }}>
                     <PrimaryButton
-                        label="Log In"
-                        onPress={() => router.replace('/(tabs)/explore')}
+                        label="Create Account"
+                        onPress={() => console.log('Create Account pressed! Name: ', name, 'Email: ', email, 'Password: ', password)}
                     />
                 </View>
 
                 <View style={styles.registerRow}>
-                    <Text style={styles.registerHint}>Don't have an account yet? </Text>
-                    <Link href="/register" style={styles.registerLink}>
-                        Create One
+                    <Text style={styles.registerHint}>Already have an account? </Text>
+                    <Link href="/login" style={styles.registerLink}>
+                        Log in
                     </Link>
                 </View>
             </View>
@@ -76,7 +87,7 @@ const styles = StyleSheet.create({
     },
     form: {
         width: '100%',
-        marginTop: 64,
+        marginTop: 24,
         gap: 12,
     },
     textButton: {
