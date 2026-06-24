@@ -1,12 +1,29 @@
-import { StyleSheet, Text, View } from 'react-native';
+
+import FeaturesFilter from '@/components/filterComponents';
+import React from 'react';
+import { StyleSheet } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 
-export default function FilterScreen() {
-  return (
-    <View style={styles.container}>
-      <Text style={styles.testText}>Der Filter-Screen funktioniert!</Text>
-    </View>
+ export default function FilterScreen() {
+    const [selectedFeatures, setSelectedFeatures] = React.useState<string[]>([]);
+  return (<SafeAreaView style={styles.container}> 
+    <FeaturesFilter
+      selectedFeatures={selectedFeatures}
+     onFeatureToggle={(feature) => {
+  setSelectedFeatures((prev) => {
+    if (prev.includes(feature)) {
+      return prev.filter((item) => item !== feature);
+    } else {
+      return [...prev, feature];
+    }
+  });
+}}
+      />
+    </SafeAreaView>
   );
+
+
 }
 
 const styles = StyleSheet.create({
@@ -21,4 +38,5 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#000000',
   },
+  
 });
