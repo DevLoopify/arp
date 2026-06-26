@@ -1,7 +1,9 @@
-import { StyleSheet, Text, View } from 'react-native';
-import MapContainer from '../../components/MapContainer';
 import Colors from '@/constants/Colors';
 import Typography from '@/constants/Typography';
+import { router } from 'expo-router';
+import { StyleSheet, Text, View } from 'react-native';
+import MapContainer from '../../components/MapContainer';
+import PrimaryButton from '../../components/PrimaryButton';
 
 const darmstadtRegion = {
   latitude: 49.8728,
@@ -34,6 +36,9 @@ const darmstadtMarkers = [
 export default function ExploreScreen() {
   return (
     <View style={styles.container}>
+      <View style={styles.filterContainer}>
+        <PrimaryButton label="Filter" onPress={() => router.push('/filter')} />
+      </View>
       <Text style={styles.eyebrow}>Start here</Text>
       <Text style={styles.title}>Explore</Text>
       <Text style={styles.copy}>Find new places, ideas, and inspiration.</Text>
@@ -69,5 +74,11 @@ const styles = StyleSheet.create({
     width: '100%',
     marginTop: 24,
     minHeight: 320,
+  },
+  filterContainer: {
+    position: 'absolute',
+    top: 24,
+    right: 24,
+    zIndex: 1,
   },
 });
