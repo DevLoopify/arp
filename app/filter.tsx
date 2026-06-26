@@ -1,14 +1,24 @@
 
 
+import ToggleButton from '@/components/ToggleButton';
 import FeaturesFilter from '@/components/UtilityFilter';
+import typography from '@/constants/Typography';
 import React from 'react';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 
  export default function FilterScreen() {
     const [selectedFeatures, setSelectedFeatures] = React.useState<string[]>([]);
   return (<SafeAreaView style={styles.container}> 
+  <Text style={[typography.sectionTitle]}>Work Mode</Text>
+  <ToggleButton 
+  inactiveText="👤 Solo Work" 
+  activeText="👥 Group Work" 
+  style={{ width: '90%', marginTop: 20 }} 
+  activeColor="#2563EB" // Optional deine Wunschfarbe
+/>
+    <Text style={[typography.sectionTitle, { marginTop: 20 }]}>Utilities</Text>
     <FeaturesFilter  
       selectedFeatures={selectedFeatures}
      onFeatureToggle={(feature) => {
