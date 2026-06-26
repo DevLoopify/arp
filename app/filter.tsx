@@ -1,4 +1,5 @@
 
+
 import FeaturesFilter from '@/components/UtilityFilter';
 import React from 'react';
 import { StyleSheet } from 'react-native';
@@ -8,7 +9,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
  export default function FilterScreen() {
     const [selectedFeatures, setSelectedFeatures] = React.useState<string[]>([]);
   return (<SafeAreaView style={styles.container}> 
-    <FeaturesFilter
+    <FeaturesFilter  
       selectedFeatures={selectedFeatures}
      onFeatureToggle={(feature) => {
   setSelectedFeatures((prev) => {
@@ -18,7 +19,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
       return [...prev, feature];
     }
   });
-}}
+}}   
       />
     </SafeAreaView>
   );

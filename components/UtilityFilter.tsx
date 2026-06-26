@@ -1,7 +1,7 @@
 
 import colors from '@/constants/Colors';
 import typography from '@/constants/Typography';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import SelectionChip from './SelectionChip';
 
 
@@ -22,7 +22,6 @@ const FEATURE_LIST  = ['WAN', 'Energy', 'Coffee', 'Printer', 'Meeting Room', 'Qu
 export default function FeaturesFilter({ selectedFeatures, onFeatureToggle }: FeaturesFilterProps) {
   return (
     <View style={styles.container}>
-      <Text style={typography.caption}>Utilites </Text>
       <View style={styles.chipsContainer}>
        {FEATURE_LIST.map((feature) => (
           <SelectionChip
