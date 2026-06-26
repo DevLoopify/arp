@@ -2,34 +2,27 @@ import React, { useState } from 'react';
 import { Pressable, StyleSheet, Text, View, ViewStyle } from 'react-native';
 
 interface ToggleButtonProps {
-  activeText?: string;  
-  inactiveText?: string; 
+  activeText?: string;
+  inactiveText?: string;
   activeColor?: string;
-  style?: ViewStyle;     
+  style?: ViewStyle;
 }
 
-export default function ToggleButton({ 
-  activeText, 
-  inactiveText, 
-  activeColor = '#2563EB', 
-  style 
+export default function ToggleButton({
+  activeText,
+  inactiveText,
+  activeColor = '#2563EB',
+  style,
 }: ToggleButtonProps) {
   const [isActive, setIsActive] = useState(false);
 
   return (
-    <Pressable 
-      style={[
-        styles.track, 
-        style, 
-        isActive && { backgroundColor: activeColor }
-      ]} 
+    <Pressable
+      style={[styles.track, style, isActive && { backgroundColor: activeColor }]}
       onPress={() => setIsActive(!isActive)}
     >
-
       <View style={[styles.contentFlow, isActive ? { flexDirection: 'row' } : { flexDirection: 'row-reverse' }]}>
-        
         <View style={styles.knob} />
-        
         {(activeText || inactiveText) && (
           <Text style={[styles.text, isActive ? styles.textActive : styles.textInactive]}>
             {isActive ? activeText : inactiveText}
@@ -42,7 +35,7 @@ export default function ToggleButton({
 
 const styles = StyleSheet.create({
   track: {
-    height: 44, 
+    height: 44,
     borderRadius: 22,
     backgroundColor: '#E0E0E0',
     padding: 4,
