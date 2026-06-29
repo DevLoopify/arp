@@ -1,7 +1,9 @@
+import AppBar from '@/components/AppBar';
 import Colors from '@/constants/Colors';
 import Typography from '@/constants/Typography';
 import { router } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import MapContainer from '../../components/MapContainer';
 import PrimaryButton from '../../components/PrimaryButton';
 
@@ -36,14 +38,15 @@ const darmstadtMarkers = [
 export default function ExploreScreen() {
   return (
     <View style={styles.container}>
-      <View style={styles.filterContainer}>
-        <PrimaryButton label="Filter" onPress={() => router.push('/filter')} />
-      </View>
-      <Text style={styles.eyebrow}>Start here</Text>
-      <Text style={styles.title}>Explore</Text>
-      <Text style={styles.copy}>Find new places, ideas, and inspiration.</Text>
+        <SafeAreaView>
+          <AppBar 
+            right= {<PrimaryButton label="Filter" onPress={() => router.push('/filter')}/>}
+            center= {<Text>Explore</Text>}
+            >
+          </AppBar>
+        </SafeAreaView>
       <View style={styles.mapPanel}>
-        <MapContainer initialRegion={darmstadtRegion} markers={darmstadtMarkers} />
+        <MapContainer isFullScreen={false} />
       </View>
     </View>
   );
