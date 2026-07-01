@@ -1,53 +1,32 @@
 import AppBar from '@/components/AppBar';
+import FilterPopup from '@/components/FilterPopup';
+import ListView from '@/components/ListView';
 import Colors from '@/constants/Colors';
 import Typography from '@/constants/Typography';
-import { router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import IconButton from '../../components/IconButton';
 import MapContainer from '../../components/MapContainer';
-import PrimaryButton from '../../components/PrimaryButton';
-
-const darmstadtRegion = {
-  latitude: 49.8728,
-  longitude: 8.6512,
-  latitudeDelta: 0.04,
-  longitudeDelta: 0.04,
-};
-
-const darmstadtMarkers = [
-  {
-    id: 'darmstadt-center',
-    title: 'Darmstadt',
-    description: 'Innenstadt',
-    coordinate: {
-      latitude: 49.8728,
-      longitude: 8.6512,
-    },
-  },
-  {
-    id: 'tu-darmstadt',
-    title: 'TU Darmstadt',
-    description: 'Campus Stadtmitte',
-    coordinate: {
-      latitude: 49.8748,
-      longitude: 8.6566,
-    },
-  },
-];
 
 export default function ExploreScreen() {
+  const [filterVisible, setFilterVisible] = useState(false);
   return (
     <View style={styles.container}>
-        <SafeAreaView>
           <AppBar 
-            right= {<PrimaryButton label="Filter" onPress={() => router.push('/filter')}/>}
-            center= {<Text>Explore</Text>}
+            right= {<IconButton icon={<Ionicons name='options' size={24}></Ionicons>} clickHandler={() => {
+              setFilterVisible(true)
+            }}></IconButton>}
+            center= {<Text style={Typography.screenTitle}>Explore</Text>}
             >
           </AppBar>
-        </SafeAreaView>
       <View style={styles.mapPanel}>
-        <MapContainer isFullScreen={false} />
+        <MapContainer isFullScreen={true} />
+        <View style={styles.listViewOverlay}>
+          <ListView></ListView>
+        </View>
       </View>
+      <FilterPopup visible={filterVisible} onClose={() => setFilterVisible(false)}></FilterPopup>
     </View>
   );
 }
@@ -56,7 +35,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.backgroundBase,
-    padding: 24,
   },
   eyebrow: {
     ...Typography.eyebrow,
@@ -75,8 +53,14 @@ const styles = StyleSheet.create({
   mapPanel: {
     flex: 1,
     width: '100%',
-    marginTop: 24,
     minHeight: 320,
+  },
+  listViewOverlay: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    top: 0,
   },
   filterContainer: {
     position: 'absolute',
@@ -84,4 +68,5 @@ const styles = StyleSheet.create({
     right: 24,
     zIndex: 1,
   },
+
 });
