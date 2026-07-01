@@ -1,28 +1,50 @@
+import Colors from '@/constants/Colors';
+import Typography from '@/constants/Typography';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { Tabs } from 'expo-router';
-
-import NavBar from '@/components/NavBar';
-import { StyleSheet, View } from 'react-native';
 
 export default function TabLayout() {
   return (
-    <View style={styles.container}>
-          
     <Tabs
       initialRouteName="explore"
-      screenOptions={{ headerShown: false }}
-      tabBar={(props) => <NavBar {...props} />}
+      screenOptions={{
+        headerShown: false,
+        tabBarActiveTintColor: Colors.accent,
+        tabBarInactiveTintColor: Colors.textMuted,
+        tabBarStyle: {
+          backgroundColor: Colors.backgroundWhite,
+          borderTopColor: '#d1d5db',
+        },
+        tabBarLabelStyle: Typography.navLabel,
+      }}
     >
-      <Tabs.Screen name="explore" options={{ title: 'Explore' }} />
-      <Tabs.Screen name="favourite" options={{ title: 'Favourite' }} />
-      <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
+      <Tabs.Screen
+        name="explore"
+        options={{
+          title: 'Explore',
+          tabBarIcon: ({ focused, color, size }) => (
+            <Ionicons name={focused ? 'search' : 'search-outline'} size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="favourite"
+        options={{
+          title: 'Favourite',
+          tabBarIcon: ({ focused, color, size }) => (
+            <Ionicons name={focused ? 'heart' : 'heart-outline'} size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'Profile',
+          tabBarIcon: ({ focused, color, size }) => (
+            <Ionicons name={focused ? 'person' : 'person-outline'} size={size} color={color} />
+          ),
+        }}
+      />
     </Tabs>
-    </View>
-
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-})
