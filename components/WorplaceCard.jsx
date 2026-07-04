@@ -1,35 +1,13 @@
 import Colors from '@/constants/Colors';
+import crowdLevels from '@/constants/crowdLevels';
 import Typography from '@/constants/Typography';
+import { resolveImage } from '@/utils/resolveImage';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { Link } from 'expo-router';
 import { Dimensions, StyleSheet, Text, View } from 'react-native';
 import ImageCarousel from './ImageCarousel';
 
-const imageMap = {
-    'Unknown.jpg': require('../assets/images/Unknown.jpg'),
-    'Unknown-2.jpg': require('../assets/images/Unknown-2.jpg'),
-    'Unknown-3.jpg': require('../assets/images/Unknown-3.jpg'),
-    'Unknown-4.jpg': require('../assets/images/Unknown-4.jpg'),
-    'Unknown-5.jpg': require('../assets/images/Unknown-5.jpg'),
-    'Unknown-6.jpg': require('../assets/images/Unknown-6.jpg'),
-    'Unknown-7.jpg': require('../assets/images/Unknown-7.jpg'),
-    'Unknown-8.jpg': require('../assets/images/Unknown-8.jpg'),
-    'Unknown-9.jpg': require('../assets/images/Unknown-9.jpg'),
-    'unnamed.jpg': require('../assets/images/unnamed.jpg'),
-    'Luisenplatz Darmstadt Innenstadt Entwicklungskonzept 09062023.webp': require('../assets/images/Luisenplatz Darmstadt Innenstadt Entwicklungskonzept 09062023.webp'),
-};
-
-function resolveImage (path){
-    return imageMap[path.split('/').pop()]
-}
-
 const screenWidth = Dimensions.get('window').width;
-
-const crowdLevels = {
-    empty: { label: 'Empty', icon: 'people-outline', color: Colors.crowdEmpty },
-    slightly_crowded: { label: 'Slightly crowded', icon: 'people-outline', color: Colors.crowdSlight },
-    medium_full: { label: 'Medium full', icon: 'people', color: Colors.crowdMedium },
-    very_crowded: { label: 'Very crowded', icon: 'people', color: Colors.crowdHigh },
-};
 
 function toRad (deg) {
     return (deg * Math.PI) / 180;
@@ -75,7 +53,9 @@ export default function WorkplaceCard({ workplace, width = screenWidth - 32, use
             <View style={styles.content}>
                 <View style={styles.titleRow}>
                     <View style={styles.titleTextGroup}>
-                        <Text style={styles.title} numberOfLines={1}>{title}</Text>
+                        <Link style={styles.title} numberOfLines={1} href={{pathname: '/(detail)/detail', params:{
+                            workplace: JSON.stringify(workplace)
+                        }}}>{title}</Link>
                         {distanceLabel && <Text style={styles.distance}>({distanceLabel})</Text>}
                     </View>
                     <View style={styles.metaItem}>

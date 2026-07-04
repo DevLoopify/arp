@@ -2,7 +2,7 @@ import Colors from '@/constants/Colors';
 import { useState } from 'react';
 import { FlatList, Image, StyleSheet, View } from 'react-native';
 
-export default function ImageCarousel({ images, width }) {
+export default function ImageCarousel({ images, width, height = 220 }) {
     const [activeIndex, setActiveIndex] = useState(0);
 
     const handleScroll = (e) => {
@@ -25,7 +25,7 @@ export default function ImageCarousel({ images, width }) {
                 renderItem={({ item }) => (
                     <Image
                         source={typeof item === 'string' ? { uri: item } : item}
-                        style={{ width, height: 220 }}
+                        style={{ width, height }}
                         resizeMode="cover"
                     />
                 )}
