@@ -12,7 +12,7 @@
       "description": "Hauptcampus h_da",
       "latitude": 49.8726,
       "longitude": 8.6527,
-      "utilities": ["wifi", "power outlets", "restrooms", "printer", "coffee"],
+      "utilities": ["wifi", "power outlets", "restrooms", "printer", "coffee", "quiet zones", "drinking water", "public transit"],
       "noise": 3,
       "images": [
         "../assets/images/Unknown.jpg",
@@ -36,7 +36,7 @@
       "description": "Studentenwerk Darmstadt",
       "latitude": 49.8713,
       "longitude": 8.6535,
-      "utilities": ["wifi", "restrooms", "coffee", "microwave"],
+      "utilities": ["wifi", "restrooms", "coffee", "microwave", "power outlets", "printer"],
       "noise": 4,
       "images": [
         "../assets/images/Unknown-3.jpg",
@@ -60,7 +60,7 @@
       "description": "Zentraler Platz in Darmstadt",
       "latitude": 49.8719,
       "longitude": 8.6512,
-      "utilities": ["benches", "public transit"],
+      "utilities": ["benches", "public transit", "drinking water", "restrooms"],
       "noise": 4,
       "images": [
         "../assets/images/Luisenplatz Darmstadt Innenstadt Entwicklungskonzept 09062023.webp",
@@ -84,7 +84,7 @@
       "description": "Öffentliche Bibliothek",
       "latitude": 49.8738,
       "longitude": 8.6549,
-      "utilities": ["wifi", "power outlets", "restrooms", "printer", "quiet zones"],
+      "utilities": ["wifi", "power outlets", "restrooms", "printer", "quiet zones", "coffee", "drinking water", "public transit", "microwave", "benches"],
       "noise": 1,
       "images": [
         "../assets/images/Unknown-5.jpg",
@@ -111,7 +111,7 @@
       "description": "Park im Stadtzentrum",
       "latitude": 49.8758,
       "longitude": 8.6551,
-      "utilities": ["benches", "drinking water"],
+      "utilities": ["benches", "drinking water", "public transit"],
       "noise": 2,
       "images": [],
       "rating": 4.4,

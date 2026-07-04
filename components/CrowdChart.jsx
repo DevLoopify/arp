@@ -1,38 +1,10 @@
 import Colors from '@/constants/Colors';
+import crowdLevels from '@/constants/crowdLevels';
 import Typography from '@/constants/Typography';
+import { areaPath, CHART_HEIGHT, linePath } from '@/utils/crowdChartMath';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
-
-const levelOrder = ['empty', 'slightly_crowded', 'medium_full', 'very_crowded'];
-const levelLabels = {
-    empty: 'Empty',
-    slightly_crowded: 'Slightly crowded',
-    medium_full: 'Medium full',
-    very_crowded: 'Very crowded',
-};
-
-const CHART_HEIGHT = 100;
-const TOP_PADDING = 10;
-
-function levelY(level) {
-    const value = levelOrder.indexOf(level) / (levelOrder.length - 1);
-    return TOP_PADDING + (1 - value) * (CHART_HEIGHT - TOP_PADDING);
-}
-
-function linePath(levels, width, totalHours) {
-    return levels
-        .map((level, hour) => {
-            const x = (hour / (totalHours - 1)) * width;
-            const y = levelY(level);
-            return `${hour === 0 ? 'M' : 'L'} ${x} ${y}`;
-        })
-        .join(' ');
-}
-
-function areaPath(levels, width, totalHours) {
-    return `${linePath(levels, width, totalHours)} L ${width} ${CHART_HEIGHT} L 0 ${CHART_HEIGHT} Z`;
-}
 
 export default function CrowdChart({ average, today, currentHour = new Date().getHours() }) {
     const [selectedHour, setSelectedHour] = useState(null);
@@ -100,7 +72,7 @@ export default function CrowdChart({ average, today, currentHour = new Date().ge
 
             <Text style={styles.detail}>
                 {selectedHour !== null
-                    ? `${selectedHour}:00 — Today: ${selectedHour <= currentHour ? levelLabels[today[selectedHour]] : 'not yet recorded'}, Average: ${levelLabels[average[selectedHour]]}`
+                    ? `${selectedHour}:00 — Today: ${selectedHour <= currentHour ? crowdLevels[today[selectedHour]].label : 'not yet recorded'}, Average: ${crowdLevels[average[selectedHour]].label}`
                     : 'Tap an hour to see details'}
             </Text>
         </View>

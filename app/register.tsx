@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, TextInput, TextInputBase, TouchableOpacity, View } from 'react-native';
+import { View, Text } from 'react-native';
 import InputField from '../components/InputField';
 import PrimaryButton from '@/components/PrimaryButton';
 import TextButton from '@/components/TextButton';
 import { Link } from 'expo-router';
-import Colors from '@/constants/Colors';
-import Typography from '@/constants/Typography';
+import authStyles from '@/constants/authStyles';
 
 export default function RegisterScreen() {
     const [email, setEmail] = useState('');
@@ -14,13 +13,13 @@ export default function RegisterScreen() {
     const [name, setName] = useState('');
 
     return (
-        <View style={styles.container}>
-            <Text style={styles.title}>ARP</Text>
-            <Text style={styles.subtitle}>
+        <View style={authStyles.container}>
+            <Text style={authStyles.title}>ARP</Text>
+            <Text style={authStyles.subtitle}>
             Nice to meet you! Create an account and start finding the perfect place to work.
             </Text>
 
-            <View style={styles.form}>
+            <View style={[authStyles.form, { marginTop: 24 }]}>
                 <InputField
                     label="Name"
                     value={name}
@@ -56,9 +55,9 @@ export default function RegisterScreen() {
                     />
                 </View>
 
-                <View style={styles.registerRow}>
-                    <Text style={styles.registerHint}>Already have an account? </Text>
-                    <Link href="/login" style={styles.registerLink}>
+                <View style={authStyles.registerRow}>
+                    <Text style={authStyles.registerHint}>Already have an account? </Text>
+                    <Link href="/login" style={authStyles.registerLink}>
                         Log in
                     </Link>
                 </View>
@@ -66,47 +65,3 @@ export default function RegisterScreen() {
         </View>
     );
 }
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: Colors.backgroundBase,
-        padding: 24,
-    },
-    title: {
-        ...Typography.display,
-        color: Colors.textPrimary,
-    },
-    subtitle: {
-        ...Typography.body,
-        marginTop: 12,
-        color: Colors.textSecondary,
-        textAlign: 'center',
-        maxWidth: 280,
-    },
-    form: {
-        width: '100%',
-        marginTop: 24,
-        gap: 12,
-    },
-    textButton: {
-        ...Typography.caption,
-        color: Colors.textSecondary,
-        textAlign: 'right',
-    },
-    registerRow: {
-        flexDirection: 'row',
-        justifyContent: 'center',
-        marginTop: 24,
-    },
-    registerHint: {
-        ...Typography.caption,
-        color: Colors.textSecondary,
-    },
-    registerLink: {
-        ...Typography.link,
-        color: Colors.primary,
-    },
-});
