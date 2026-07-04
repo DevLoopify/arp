@@ -1,31 +1,24 @@
 import BottomSheet, { BottomSheetScrollView } from "@gorhom/bottom-sheet";
 import React, { useCallback, useMemo, useRef } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet } from "react-native";
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import workplacesData from '../data/worplaces.json';
+import WorkplaceCard from './WorplaceCard';
 
-const ListView = () => {
+const { workplaces } = workplacesData;
+
+const ListView = ({ userLocation }) => {
   const sheetRef = useRef(null);
 
-  const data = useMemo(
-    () =>
-      Array(50)
-        .fill(0)
-        .map((_, index) => `index-${index}`),
-    []
-  );
-  const snapPoints = useMemo(() => ["25%", "50%", "90%"], []);
+  const snapPoints = useMemo(() => ["25%", "50%", "100%"], []);
 
   const handleSheetChange = useCallback((index) => {
     console.log("handleSheetChange", index);
   }, []);
 
   const renderItem = useCallback(
-    (item) => (
-      <View key={item} style={styles.itemContainer}>
-        <Text>{item}</Text>
-      </View>
-    ),
-    []
+    (workplace) => <WorkplaceCard key={workplace.id} workplace={workplace} userLocation={userLocation} />,
+    [userLocation]
   );
   return (
     <GestureHandlerRootView style={styles.container}>
@@ -37,7 +30,7 @@ const ListView = () => {
         onChange={handleSheetChange}
       >
         <BottomSheetScrollView contentContainerStyle={styles.contentContainer}>
-          {data.map(renderItem)}
+          {workplaces.map(renderItem)}
         </BottomSheetScrollView>
       </BottomSheet>
     </GestureHandlerRootView>
@@ -47,15 +40,10 @@ const ListView = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: 200,
   },
   contentContainer: {
     backgroundColor: "white",
-  },
-  itemContainer: {
-    padding: 6,
-    margin: 6,
-    backgroundColor: "#eee",
+    padding: 12,
   },
 });
 

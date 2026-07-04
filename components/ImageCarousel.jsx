@@ -24,7 +24,7 @@ export default function ImageCarousel({ images, width }) {
                 scrollEventThrottle={16}
                 renderItem={({ item }) => (
                     <Image
-                        source={{ uri: item }}
+                        source={typeof item === 'string' ? { uri: item } : item}
                         style={{ width, height: 220 }}
                         resizeMode="cover"
                     />

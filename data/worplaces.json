@@ -12,14 +12,14 @@
       "description": "Hauptcampus h_da",
       "latitude": 49.8726,
       "longitude": 8.6527,
-      "utilities": ["wlan", "steckdosen", "toiletten", "drucker", "kaffee"],
+      "utilities": ["wifi", "power outlets", "restrooms", "printer", "coffee"],
       "noise": 3,
       "images": [
         "../assets/images/Unknown.jpg",
         "../assets/images/Unknown-2.jpg"
       ],
       "rating": 4.2,
-      "capacity": 200,
+      "crowdedness": "medium_full",
       "reviews": [
         { "id": 1, "author": "Max M.", "rating": 5, "comment": "Super Lernumgebung, viele Steckdosen und gutes WLAN.", "date": "2025-11-10" },
         { "id": 2, "author": "Laura K.", "rating": 4, "comment": "Gut zum Arbeiten, manchmal etwas laut zwischen den Vorlesungen.", "date": "2025-10-22" },
@@ -34,14 +34,14 @@
       "description": "Studentenwerk Darmstadt",
       "latitude": 49.8713,
       "longitude": 8.6535,
-      "utilities": ["wlan", "toiletten", "kaffee", "mikrowelle"],
+      "utilities": ["wifi", "restrooms", "coffee", "microwave"],
       "noise": 4,
       "images": [
         "../assets/images/Unknown-3.jpg",
         "../assets/images/Unknown-4.jpg"
       ],
       "rating": 3.5,
-      "capacity": 500,
+      "crowdedness": "very_crowded",
       "reviews": [
         { "id": 1, "author": "Anna S.", "rating": 4, "comment": "Günstig und schnell, zum kurzen Mittagsarbeiten okay.", "date": "2025-11-05" },
         { "id": 2, "author": "Tim F.", "rating": 3, "comment": "Sehr laut zur Mittagszeit, aber WLAN ist stabil.", "date": "2025-10-18" },
@@ -56,14 +56,14 @@
       "description": "Zentraler Platz in Darmstadt",
       "latitude": 49.8719,
       "longitude": 8.6512,
-      "utilities": ["bänke", "öpnv-anbindung"],
+      "utilities": ["benches", "public transit"],
       "noise": 4,
       "images": [
         "../assets/images/Luisenplatz Darmstadt Innenstadt Entwicklungskonzept 09062023.webp",
         "../assets/images/unnamed.jpg"
       ],
       "rating": 3.8,
-      "capacity": 40,
+      "crowdedness": "slightly_crowded",
       "reviews": [
         { "id": 1, "author": "Finn W.", "rating": 4, "comment": "Schöner Platz für eine Pause, aber zum Arbeiten zu laut.", "date": "2025-10-12" },
         { "id": 2, "author": "Sophie L.", "rating": 3, "comment": "Im Sommer angenehm, aber kein WLAN und viel Verkehr.", "date": "2025-08-20" },
@@ -78,7 +78,7 @@
       "description": "Öffentliche Bibliothek",
       "latitude": 49.8738,
       "longitude": 8.6549,
-      "utilities": ["wlan", "steckdosen", "toiletten", "drucker", "ruhezonen"],
+      "utilities": ["wifi", "power outlets", "restrooms", "printer", "quiet zones"],
       "noise": 1,
       "images": [
         "../assets/images/Unknown-5.jpg",
@@ -88,7 +88,7 @@
         "../assets/images/Unknown-9.jpg"
       ],
       "rating": 4.6,
-      "capacity": 150,
+      "crowdedness": "slightly_crowded",
       "reviews": [
         { "id": 1, "author": "Clara Z.", "rating": 5, "comment": "Absolute Ruhe, viele Plätze und zuverlässiges WLAN.", "date": "2025-11-01" },
         { "id": 2, "author": "Noah K.", "rating": 5, "comment": "Mein liebster Lernort in Darmstadt. Tolle Atmosphäre.", "date": "2025-10-14" },
@@ -103,11 +103,11 @@
       "description": "Park im Stadtzentrum",
       "latitude": 49.8758,
       "longitude": 8.6551,
-      "utilities": ["bänke", "trinkwasser"],
+      "utilities": ["benches", "drinking water"],
       "noise": 2,
       "images": [],
       "rating": 4.4,
-      "capacity": 30,
+      "crowdedness": "empty",
       "reviews": [
         { "id": 1, "author": "Lena T.", "rating": 5, "comment": "Im Sommer perfekt zum Lesen und Arbeiten an der frischen Luft.", "date": "2025-06-15" },
         { "id": 2, "author": "Paul G.", "rating": 4, "comment": "Ruhig und grün, kein WLAN aber sehr entspannend.", "date": "2025-07-03" },

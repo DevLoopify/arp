@@ -14,6 +14,17 @@ const Colors = {
     backgroundSubtle: '#ecfdf5',
     backgroundWarm: '#fff7ed',
     backgroundWhite: '#ffffff',
+
+    // Crowd level
+    crowdEmpty: '#16a34a',
+    crowdSlight: '#84cc16',
+    crowdMedium: '#f59e0b',
+    crowdHigh: '#dc2626',
+
+    // Live indicator
+    live: '#dc2626',
+    liveBackground: '#fef2f2',
+    liveBorder: '#fecaca',
 };
 
 export default Colors;

@@ -1,15 +1,18 @@
 import ListView from '@/components/ListView';
 import Colors from '@/constants/Colors';
+import useCurrentLocation from '@/hooks/useCurrentLocation';
 import { StyleSheet, View } from 'react-native';
 import MapContainer from '../../components/MapContainer';
 
 export default function ExploreScreen() {
+  const { location: userLocation, permissionGranted } = useCurrentLocation();
+
   return (
     <View style={styles.container}>
       <View style={styles.mapPanel}>
-        <MapContainer isFullScreen={true} />
+        <MapContainer isFullScreen={true} userLocation={userLocation} permissionGranted={permissionGranted} />
         <View style={styles.listViewOverlay}>
-          <ListView />
+          <ListView userLocation={userLocation} />
         </View>
       </View>
     </View>
