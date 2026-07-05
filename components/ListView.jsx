@@ -1,16 +1,39 @@
 import BottomSheet, { BottomSheetScrollView } from "@gorhom/bottom-sheet";
-import React, { useCallback, useMemo, useRef } from "react";
+import React, { useCallback, useEffect, useMemo, useRef } from "react";
 import { StyleSheet } from "react-native";
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import workplacesData from '../data/worplaces.json';
+import { getDistanceKm } from '../utils/geo';
 import WorkplaceCard from './WorplaceCard';
 
 const { workplaces } = workplacesData;
 
-const ListView = ({ userLocation }) => {
+const ListView = ({ userLocation, selectedWorkplaceId }) => {
   const sheetRef = useRef(null);
+  const scrollRef = useRef(null);
 
   const snapPoints = useMemo(() => ["25%", "50%", "100%"], []);
+
+  const sortedWorkplaces = useMemo(() => {
+    const list = userLocation
+      ? [...workplaces].sort(
+          (a, b) => getDistanceKm(userLocation, a) - getDistanceKm(userLocation, b)
+        )
+      : workplaces;
+
+    if (selectedWorkplaceId == null) return list;
+
+    const selected = list.find((workplace) => workplace.id === selectedWorkplaceId);
+    if (!selected) return list;
+
+    return [selected, ...list.filter((workplace) => workplace.id !== selectedWorkplaceId)];
+  }, [userLocation, selectedWorkplaceId]);
+
+  useEffect(() => {
+    if (selectedWorkplaceId != null) {
+      scrollRef.current?.scrollTo({ y: 0, animated: true });
+    }
+  }, [selectedWorkplaceId]);
 
   const handleSheetChange = useCallback((index) => {
     console.log("handleSheetChange", index);
@@ -29,8 +52,8 @@ const ListView = ({ userLocation }) => {
         enableDynamicSizing={false}
         onChange={handleSheetChange}
       >
-        <BottomSheetScrollView contentContainerStyle={styles.contentContainer}>
-          {workplaces.map(renderItem)}
+        <BottomSheetScrollView ref={scrollRef} contentContainerStyle={styles.contentContainer}>
+          {sortedWorkplaces.map(renderItem)}
         </BottomSheetScrollView>
       </BottomSheet>
     </GestureHandlerRootView>

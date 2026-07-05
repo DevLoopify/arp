@@ -76,7 +76,7 @@ export default function FilterPopup({ visible, onClose }) {
             <View style={styles.handleArea} {...panResponder.panHandlers}>
                 <View style={styles.handle} />
                 <Pressable onPress={onClose} style={styles.closeButton} hitSlop={8}>
-                    <Ionicons name="close" size={24} />
+                    <Ionicons name="arrow-back" size={24} />
                 </Pressable>
             </View>
             <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>

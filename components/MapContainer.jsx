@@ -15,7 +15,7 @@ function regionForRadius(latitude, longitude, radiusMeters) {
   return { latitude, longitude, latitudeDelta, longitudeDelta };
 }
 
-export default function MapContainer({ isFullScreen, userLocation, permissionGranted, radius }) {
+export default function MapContainer({ isFullScreen, userLocation, permissionGranted, radius = null, onMarkerPress }) {
   const mapRef = useRef(null);
   const center = userLocation ?? fallbackRegion;
 
@@ -50,6 +50,7 @@ export default function MapContainer({ isFullScreen, userLocation, permissionGra
             coordinate={{ latitude: place.latitude, longitude: place.longitude }}
             title={place.title}
             description={place.description}
+            onPress={() => onMarkerPress?.(place.id)}
           />
         ))}
         {radius && (
