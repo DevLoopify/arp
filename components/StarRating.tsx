@@ -1,20 +1,32 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { StyleSheet, TouchableOpacity, View } from "react-native";
 
-function StarRating() {
-  const [rating, setRating] = useState(1);
+type StarRatingProps = {
+  rating?: number;
+  onRatingChange?: (rating: number) => void;
+  size?: number;
+};
+
+function StarRating({ rating: ratingProp = 1, onRatingChange, size = 40 }: StarRatingProps) {
+  const [rating, setRating] = useState(ratingProp);
+
+  useEffect(() => {
+    setRating(ratingProp);
+  }, [ratingProp]);
+
+  const handlePress = (value: number) => {
+    setRating(value);
+    onRatingChange?.(value);
+  };
 
   return (
     <View style={styles.container}>
       {[1, 2, 3, 4, 5].map((star) => (
-        <TouchableOpacity
-          key={star}
-          onPress={() => setRating(star)}
-        >
+        <TouchableOpacity key={star} onPress={() => handlePress(star)}>
           <Ionicons
             name={star <= rating ? "star" : "star-outline"}
-            size={40}
+            size={size}
             color="#FFD700"
           />
         </TouchableOpacity>
@@ -26,6 +38,7 @@ function StarRating() {
 const styles = StyleSheet.create({
   container: {
     flexDirection: "row",
+    gap: 8,
   },
 });
 

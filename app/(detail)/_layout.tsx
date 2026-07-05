@@ -1,10 +1,12 @@
 import Colors from '@/constants/Colors';
 import Typography from '@/constants/Typography';
 import { Ionicons } from '@expo/vector-icons';
-import { Slot } from 'expo-router';
+import { Slot, router, useLocalSearchParams } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 export default function DetailLayout() {
+  const { workplace } = useLocalSearchParams<{ workplace: string }>();
+
   return (
     <View style={styles.container}>
       <View style={styles.content}>
@@ -16,7 +18,12 @@ export default function DetailLayout() {
           <Ionicons name="navigate-outline" size={22} color={Colors.live} />
           <Text style={[styles.bottomBarLabel, { color: Colors.live }]}>Route</Text>
         </Pressable>
-        <Pressable style={styles.bottomBarButton} onPress={() => console.log('Review pressed!')}>
+        <Pressable
+          style={styles.bottomBarButton}
+          onPress={() =>
+            router.push({ pathname: '/review', params: { workplace: workplace ?? '' } })
+          }
+        >
           <Ionicons name="chatbubble-outline" size={22} color={Colors.primary} />
           <Text style={styles.bottomBarLabel}>Review</Text>
         </Pressable>
