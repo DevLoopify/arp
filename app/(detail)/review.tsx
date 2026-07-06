@@ -21,7 +21,28 @@ export default function ReviewScreen() {
 
   const handleSubmit = () => {
     allowRemove.current = true;
-    console.log('Review submitted', { rating, comment });
+    const newReview = {
+      id: parsedWorkplace?.reviews ? Math.max(...parsedWorkplace.reviews.map((r: any) => r.id)) + 1 : 1,
+      author: 'Du',
+      rating,
+      comment,
+      date: new Date().toISOString().slice(0, 10),
+    };
+
+    const updatedWorkplace = parsedWorkplace
+      ? { ...parsedWorkplace, reviews: [...(parsedWorkplace.reviews || []), newReview] }
+      : null;
+
+    if (updatedWorkplace) {
+
+      const ratings = updatedWorkplace.reviews.map((r: any) => r.rating);
+      const avg = ratings.reduce((a: number, b: number) => a + b, 0) / ratings.length;
+      updatedWorkplace.rating = Math.round(avg * 10) / 10;
+
+      router.replace({ pathname: '/(detail)/detail', params: { workplace: JSON.stringify(updatedWorkplace) } });
+      return;
+    }
+
     router.back();
   };
 
