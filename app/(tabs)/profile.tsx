@@ -6,18 +6,8 @@ import { Ionicons } from '@expo/vector-icons';
 import Slider from '@react-native-community/slider';
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
-import {
-    Image,
-    LayoutAnimation,
-    Platform,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    UIManager,
-    View,
-} from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Animated, Image, LayoutAnimation, Platform, Pressable, ScrollView, StyleSheet, Text, UIManager, View,} from 'react-native';
 import InputField from '@/components/InputField';
 import SelectionChip from '@/components/SelectionChip';
 
@@ -27,16 +17,8 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 
 const UTILITIES = Object.keys(utilityIcons);
 
-const NOISE_OPTIONS = [
-    { value: 'quiet', label: 'Quiet' },
-    { value: 'average', label: 'Average' },
-    { value: 'noisy', label: 'Noisy' },
-];
-
-const WORK_MODE_OPTIONS = [
-    { value: 'solo', label: 'Solo Work' },
-    { value: 'group', label: 'Group Work' },
-];
+const TOGGLE_HEIGHT = 50;
+const KNOB_MARGIN = 4;
 
 const UNIT_OPTIONS = [
     { value: 'km', label: 'Kilometers' },
@@ -68,6 +50,9 @@ export default function ProfileScreen() {
 
     const [showSavedToast, setShowSavedToast] = useState(false);
 
+    const [toggleWidth, setToggleWidth] = useState(0);
+    const slideAnim = useRef(new Animated.Value(0)).current;
+
     useEffect(() => {
         if (!isLoaded) return;
         setAvatarUri(settings.avatarUri);
@@ -75,10 +60,17 @@ export default function ProfileScreen() {
         setNoiseLevel(settings.noiseLevel);
         setRadius(settings.radius);
         setWorkMode(settings.workMode);
+        slideAnim.setValue(settings.workMode === 'group' ? 1 : 0);
         setSelectedUtilities(settings.utilities);
         setUnit(settings.unit);
         setLanguage(settings.language);
-    }, [isLoaded, settings]);
+    }, [isLoaded, settings, slideAnim]);
+
+    const knobWidth = toggleWidth > 0 ? toggleWidth / 2 - KNOB_MARGIN * 2 : 0;
+    const knobTranslateX = slideAnim.interpolate({
+        inputRange: [0, 1],
+        outputRange: [KNOB_MARGIN, Math.max(toggleWidth - knobWidth - KNOB_MARGIN, KNOB_MARGIN)],
+    });
 
     const togglePreferences = () => {
         LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -89,6 +81,16 @@ export default function ProfileScreen() {
         setSelectedUtilities((prev) =>
             prev.includes(utility) ? prev.filter((u) => u !== utility) : [...prev, utility]
         );
+    };
+
+    const toggleWorkMode = () => {
+        const next: WorkMode = workMode === 'solo' ? 'group' : 'solo';
+        setWorkMode(next);
+        Animated.timing(slideAnim, {
+            toValue: next === 'group' ? 1 : 0,
+            duration: 200,
+            useNativeDriver: true,
+        }).start();
     };
 
     const pickAvatar = async () => {
@@ -158,11 +160,38 @@ export default function ProfileScreen() {
                 {preferencesExpanded && (
                     <View style={styles.sectionBody}>
                         <Text style={styles.fieldLabel}>Noise Level</Text>
-                        <OptionGroup
-                            options={NOISE_OPTIONS}
-                            value={noiseLevel}
-                            onChange={(value) => setNoiseLevel(value as NoiseLevel)}
-                        />
+                        <View style={styles.noiseRow}>
+                            <Pressable
+                                onPress={() => setNoiseLevel('quiet')}
+                                style={[
+                                    styles.noiseBox,
+                                    styles.quietBox,
+                                    noiseLevel === 'quiet' && styles.quietBoxSelected,
+                                ]}
+                            >
+                                <Text style={noiseLevel === 'quiet' && styles.noiseTextSelected}>Quiet</Text>
+                            </Pressable>
+                            <Pressable
+                                onPress={() => setNoiseLevel('average')}
+                                style={[
+                                    styles.noiseBox,
+                                    styles.averageBox,
+                                    noiseLevel === 'average' && styles.averageBoxSelected,
+                                ]}
+                            >
+                                <Text style={noiseLevel === 'average' && styles.noiseTextSelected}>Average</Text>
+                            </Pressable>
+                            <Pressable
+                                onPress={() => setNoiseLevel('noisy')}
+                                style={[
+                                    styles.noiseBox,
+                                    styles.noisyBox,
+                                    noiseLevel === 'noisy' && styles.noisyBoxSelected,
+                                ]}
+                            >
+                                <Text style={noiseLevel === 'noisy' && styles.noiseTextSelected}>Noisy</Text>
+                            </Pressable>
+                        </View>
 
                         <View style={styles.radiusHeader}>
                             <Text style={styles.fieldLabel}>Search Radius</Text>
@@ -175,17 +204,27 @@ export default function ProfileScreen() {
                             step={100}
                             value={radius}
                             onValueChange={setRadius}
-                            minimumTrackTintColor={Colors.primary}
+                            minimumTrackTintColor="#1E88E5"
                             maximumTrackTintColor="#ccc"
-                            thumbTintColor={Colors.primary}
+                            thumbTintColor="#1E88E5"
                         />
 
                         <Text style={styles.fieldLabel}>Work Mode</Text>
-                        <OptionGroup
-                            options={WORK_MODE_OPTIONS}
-                            value={workMode}
-                            onChange={(value) => setWorkMode(value as WorkMode)}
-                        />
+                        <Pressable
+                            onPress={toggleWorkMode}
+                            onLayout={(e) => setToggleWidth(e.nativeEvent.layout.width)}
+                            style={styles.toggleButton}
+                        >
+                            <Animated.View
+                                style={[
+                                    styles.toggleKnob,
+                                    { width: knobWidth, height: TOGGLE_HEIGHT - KNOB_MARGIN * 2, transform: [{ translateX: knobTranslateX }] },
+                                ]}
+                            />
+                            <Text style={styles.toggleLabel}>
+                                {workMode === 'solo' ? 'Solo Work' : 'Group Work'}
+                            </Text>
+                        </Pressable>
 
                         <Text style={styles.fieldLabel}>Utilities</Text>
                         <View style={styles.chipsContainer}>
@@ -353,11 +392,69 @@ const styles = StyleSheet.create({
     radiusValue: {
         ...Typography.caption,
         fontWeight: '600',
-        color: Colors.primary,
+        color: '#1E88E5',
     },
     slider: {
         width: '100%',
         height: 40,
+    },
+    noiseRow: {
+        flexDirection: 'row',
+        gap: 8,
+    },
+    noiseBox: {
+        flex: 1,
+        paddingVertical: 12,
+        alignItems: 'center',
+        borderRadius: 8,
+        borderWidth: 2,
+        borderColor: 'transparent',
+    },
+    quietBox: {
+        backgroundColor: '#DFF5E1',
+    },
+    quietBoxSelected: {
+        backgroundColor: '#4CAF50',
+        borderColor: '#2E7D32',
+    },
+    averageBox: {
+        backgroundColor: '#FFF3CD',
+    },
+    averageBoxSelected: {
+        backgroundColor: '#FFC107',
+        borderColor: '#B28704',
+    },
+    noisyBox: {
+        backgroundColor: '#FDE0E0',
+    },
+    noisyBoxSelected: {
+        backgroundColor: '#F44336',
+        borderColor: '#B71C1C',
+    },
+    noiseTextSelected: {
+        color: 'white',
+        fontWeight: '700',
+    },
+    toggleButton: {
+        height: TOGGLE_HEIGHT,
+        borderRadius: TOGGLE_HEIGHT / 2,
+        backgroundColor: '#90CAF9',
+        justifyContent: 'center',
+        alignItems: 'center',
+        overflow: 'hidden',
+        width: '100%',
+    },
+    toggleKnob: {
+        position: 'absolute',
+        top: KNOB_MARGIN,
+        left: 0,
+        borderRadius: (TOGGLE_HEIGHT - KNOB_MARGIN * 2) / 2,
+        backgroundColor: '#1E88E5',
+    },
+    toggleLabel: {
+        color: 'white',
+        fontSize: 16,
+        fontWeight: '700',
     },
     chipsContainer: {
         flexDirection: 'row',
