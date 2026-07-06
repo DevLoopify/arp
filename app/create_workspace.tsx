@@ -1,4 +1,3 @@
-import IconButton from '@/components/IconButton';
 import InputField from '@/components/InputField';
 import PrimaryButton from '@/components/PrimaryButton';
 import SelectionChip from '@/components/SelectionChip';
@@ -9,7 +8,7 @@ import { useCustomWorkplaces } from '@/context/CustomWorkplacesContext';
 import useCurrentLocation from '@/hooks/useCurrentLocation';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import { router, Stack } from 'expo-router';
+import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import MapView, { MapPressEvent, Marker } from 'react-native-maps';
@@ -99,23 +98,15 @@ export default function CreateWorkspace() {
     };
 
     return (
-        <ScrollView style={styles.container}>
-            <Stack.Screen
-                options={{
-                    headerShown: true,
-                    title: 'Create Workspace',
-                    headerTitleAlign: 'center',
-                    headerTitleStyle: { fontSize: Typography.button.fontSize, fontWeight: Typography.button.fontWeight },
-                    headerStyle: { backgroundColor: Colors.backgroundBase },
-                    headerShadowVisible: false,
-                    headerLeft: () => (
-                        <IconButton
-                            icon={<Ionicons name="arrow-back" size={22} color={Colors.textPrimary} />}
-                            clickHandler={() => router.back()}
-                        />
-                    ),
-                }}
-            />
+        <View style={styles.container}>
+            <View style={styles.header}>
+                <Pressable style={styles.backButton} onPress={() => router.back()}>
+                    <Ionicons name="arrow-back" size={24} color={Colors.textPrimary} />
+                </Pressable>
+                <Text style={styles.headerTitle}>Create Workspace</Text>
+            </View>
+
+            <ScrollView>
             <View style={styles.content}>
                 <InputField
                     label="Workspace Name"
@@ -189,7 +180,8 @@ export default function CreateWorkspace() {
                     </View>
                 </View>
             </View>
-        </ScrollView>
+            </ScrollView>
+        </View>
     );
 }
 
@@ -197,6 +189,29 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: Colors.backgroundBase,
+    },
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingHorizontal: 16,
+        paddingTop: 48,
+        paddingBottom: 16,
+        backgroundColor: Colors.backgroundWhite,
+        borderBottomWidth: 1,
+        borderBottomColor: '#e5e7eb',
+    },
+    backButton: {
+        padding: 8,
+        marginRight: 12,
+    },
+    headerTitle: {
+        ...Typography.screenTitle,
+        flex: 1,
+        fontSize: 20,
+        color: Colors.textPrimary,
+        textAlign: 'center',
+        marginRight: 36,
     },
     content: {
         padding: 16,
