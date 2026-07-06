@@ -1,14 +1,17 @@
 import WorkplaceCard from '@/components/WorplaceCard';
 import Colors from '@/constants/Colors';
 import Typography from '@/constants/Typography';
+import { toDisplayWorkplace, useCustomWorkplaces } from '@/context/CustomWorkplacesContext';
 import { useFavourites } from '@/context/FavouritesContext';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import workplacesData from '../../data/worplaces.json';
 
-const { workplaces } = workplacesData;
+const { workplaces: staticWorkplaces } = workplacesData;
 
 export default function FavouriteScreen() {
   const { favouriteIds } = useFavourites();
+  const { customWorkplaces } = useCustomWorkplaces();
+  const workplaces = [...staticWorkplaces, ...customWorkplaces.map(toDisplayWorkplace)];
   const favouriteWorkplaces = workplaces.filter((workplace) => favouriteIds.has(workplace.id));
 
   if (favouriteWorkplaces.length === 0) {

@@ -3,7 +3,7 @@ import IconButton from '@/components/IconButton';
 import Colors from '@/constants/Colors';
 import Typography from '@/constants/Typography';
 import { Ionicons } from '@expo/vector-icons';
-import { Tabs } from 'expo-router';
+import { router, Tabs } from 'expo-router';
 import { useState } from 'react';
 
 export default function TabLayout() {
@@ -36,6 +36,12 @@ export default function TabLayout() {
             title: 'Explore',
             tabBarIcon: ({ focused, color, size }) => (
               <Ionicons name={focused ? 'search' : 'search-outline'} size={size} color={color} />
+            ),
+            headerLeft: () => (
+              <IconButton
+                icon={<Ionicons name="add" size={24} />}
+                clickHandler={() => router.push('/create_workspace')}
+              />
             ),
             headerRight: () => (
               <IconButton

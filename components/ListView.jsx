@@ -1,3 +1,4 @@
+import { toDisplayWorkplace, useCustomWorkplaces } from '@/context/CustomWorkplacesContext';
 import BottomSheet, { BottomSheetScrollView } from "@gorhom/bottom-sheet";
 import React, { useCallback, useEffect, useMemo, useRef } from "react";
 import { StyleSheet } from "react-native";
@@ -6,13 +7,19 @@ import workplacesData from '../data/worplaces.json';
 import { getDistanceKm } from '../utils/geo';
 import WorkplaceCard from './WorplaceCard';
 
-const { workplaces } = workplacesData;
+const { workplaces: staticWorkplaces } = workplacesData;
 
 const ListView = ({ userLocation, selectedWorkplaceId }) => {
   const sheetRef = useRef(null);
   const scrollRef = useRef(null);
+  const { customWorkplaces } = useCustomWorkplaces();
 
   const snapPoints = useMemo(() => ["25%", "50%", "100%"], []);
+
+  const workplaces = useMemo(
+    () => [...staticWorkplaces, ...customWorkplaces.map(toDisplayWorkplace)],
+    [customWorkplaces]
+  );
 
   const sortedWorkplaces = useMemo(() => {
     const list = userLocation
@@ -27,7 +34,7 @@ const ListView = ({ userLocation, selectedWorkplaceId }) => {
     if (!selected) return list;
 
     return [selected, ...list.filter((workplace) => workplace.id !== selectedWorkplaceId)];
-  }, [userLocation, selectedWorkplaceId]);
+  }, [workplaces, userLocation, selectedWorkplaceId]);
 
   useEffect(() => {
     if (selectedWorkplaceId != null) {

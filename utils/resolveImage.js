@@ -13,5 +13,6 @@ const imageMap = {
 };
 
 export function resolveImage(path) {
-    return imageMap[path.split('/').pop()];
+    const filename = path.split('/').pop();
+    return imageMap[filename] ?? { uri: path };
 }
