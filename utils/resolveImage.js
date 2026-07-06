@@ -12,7 +12,10 @@ const imageMap = {
     'Luisenplatz Darmstadt Innenstadt Entwicklungskonzept 09062023.webp': require('../assets/images/Luisenplatz Darmstadt Innenstadt Entwicklungskonzept 09062023.webp'),
 };
 
+import { resolveApiUrl } from './api';
+
 export function resolveImage(path) {
     const filename = path.split('/').pop();
-    return imageMap[filename] ?? { uri: path };
+    if (imageMap[filename]) return imageMap[filename];
+    return { uri: resolveApiUrl(path) };
 }

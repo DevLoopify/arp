@@ -4,7 +4,7 @@ import SelectionChip from '@/components/SelectionChip';
 import Colors from '@/constants/Colors';
 import Typography from '@/constants/Typography';
 import utilityIcons, { getUtilityIcon } from '@/constants/utilityIcons';
-import { useCustomWorkplaces } from '@/context/CustomWorkplacesContext';
+import { useWorkplaces } from '@/context/WorkplacesContext';
 import useCurrentLocation from '@/hooks/useCurrentLocation';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -29,12 +29,13 @@ export default function CreateWorkspace() {
     const [photoUris, setPhotoUris] = useState<string[] | null>(null);
     const [markerCoordinate, setMarkerCoordinate] = useState<{ latitude: number; longitude: number } | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const { location, permissionGranted } = useCurrentLocation() as {
         location: { latitude: number; longitude: number } | null;
         permissionGranted: boolean;
     };
     const mapRef = useRef<MapView>(null);
-    const { addWorkplace } = useCustomWorkplaces();
+    const { addWorkplace } = useWorkplaces();
 
     const toggleUtility = (utility: string) => {
         setSelectedUtilities((prev) =>
@@ -86,15 +87,21 @@ export default function CreateWorkspace() {
             return;
         }
         setError(null);
-
-        await addWorkplace({
-            name,
-            description,
-            utilities: selectedUtilities,
-            location: markerCoordinate!,
-            photoUris: photoUris ?? [],
-        });
-        router.back();
+        setIsSubmitting(true);
+        try {
+            await addWorkplace({
+                name,
+                description,
+                utilities: selectedUtilities,
+                location: markerCoordinate!,
+                photoUris: photoUris ?? [],
+            });
+            router.back();
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Could not create the workplace.');
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (
@@ -176,7 +183,7 @@ export default function CreateWorkspace() {
                         <Text style={styles.cancelButtonText}>Cancel</Text>
                     </Pressable>
                     <View style={styles.addButton}>
-                        <PrimaryButton label="Add" onPress={handleAdd} />
+                        <PrimaryButton label={isSubmitting ? 'Adding...' : 'Add'} onPress={handleAdd} />
                     </View>
                 </View>
             </View>

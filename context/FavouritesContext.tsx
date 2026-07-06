@@ -1,4 +1,6 @@
-import { createContext, ReactNode, useCallback, useContext, useMemo, useState } from 'react';
+import { useAuth } from '@/context/AuthContext';
+import { api } from '@/utils/api';
+import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
 type FavouritesContextValue = {
     favouriteIds: Set<number>;
@@ -9,19 +11,41 @@ type FavouritesContextValue = {
 const FavouritesContext = createContext<FavouritesContextValue | undefined>(undefined);
 
 export function FavouritesProvider({ children }: { children: ReactNode }) {
+    const { token } = useAuth();
     const [favouriteIds, setFavouriteIds] = useState<Set<number>>(new Set());
 
-    const toggleFavourite = useCallback((id: number) => {
-        setFavouriteIds((prev) => {
-            const next = new Set(prev);
-            if (next.has(id)) {
-                next.delete(id);
-            } else {
-                next.add(id);
-            }
-            return next;
-        });
-    }, []);
+    useEffect(() => {
+        if (!token) {
+            setFavouriteIds(new Set());
+            return;
+        }
+        api.favourites.list(token).then((ids) => setFavouriteIds(new Set(ids)));
+    }, [token]);
+
+    const toggleFavourite = useCallback(
+        (id: number) => {
+            if (!token) return;
+
+            setFavouriteIds((prev) => {
+                const next = new Set(prev);
+                if (next.has(id)) {
+                    next.delete(id);
+                    api.favourites.remove(token, id).catch(() => setFavouriteIds((cur) => new Set(cur).add(id)));
+                } else {
+                    next.add(id);
+                    api.favourites.add(token, id).catch(() =>
+                        setFavouriteIds((cur) => {
+                            const reverted = new Set(cur);
+                            reverted.delete(id);
+                            return reverted;
+                        })
+                    );
+                }
+                return next;
+            });
+        },
+        [token]
+    );
 
     const isFavourite = useCallback((id: number) => favouriteIds.has(id), [favouriteIds]);
 

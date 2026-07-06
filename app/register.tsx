@@ -1,16 +1,37 @@
 import React, { useState } from 'react';
-import { View, Text } from 'react-native';
+import { Alert, View, Text } from 'react-native';
 import InputField from '../components/InputField';
 import PrimaryButton from '@/components/PrimaryButton';
 import TextButton from '@/components/TextButton';
-import { Link } from 'expo-router';
+import { Link, router } from 'expo-router';
 import authStyles from '@/constants/authStyles';
+import { useAuth } from '@/context/AuthContext';
+import { ApiError } from '@/utils/api';
 
 export default function RegisterScreen() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [name, setName] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const { register } = useAuth();
+
+    const handleCreateAccount = async () => {
+        if (password !== confirmPassword) {
+            Alert.alert('Passwords do not match', 'Please make sure both passwords are the same.');
+            return;
+        }
+        setIsSubmitting(true);
+        try {
+            await register(name, email, password);
+            router.replace('/(tabs)/explore');
+        } catch (err) {
+            const message = err instanceof ApiError ? err.message : 'Could not reach the server.';
+            Alert.alert('Registration failed', message);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
 
     return (
         <View style={authStyles.container}>
@@ -50,8 +71,8 @@ export default function RegisterScreen() {
                 />
                 <View style={{ marginTop: 24 }}>
                     <PrimaryButton
-                        label="Create Account"
-                        onPress={() => console.log('Create Account pressed! Name: ', name, 'Email: ', email, 'Password: ', password)}
+                        label={isSubmitting ? 'Creating account...' : 'Create Account'}
+                        onPress={handleCreateAccount}
                     />
                 </View>
 

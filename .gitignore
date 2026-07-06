@@ -32,6 +32,11 @@ yarn-error.*
 
 # local env files
 .env*.local
+.env
+
+# Go backend
+backend/uploads/*
+!backend/uploads/.gitkeep
 
 # typescript
 *.tsbuildinfo

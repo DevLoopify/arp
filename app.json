@@ -24,11 +24,15 @@
         {
           "locationWhenInUsePermission": "Allow arp to use your location to show your position on the map."
         }
-      ]
+      ],
+      "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "apiUrl": "https://arp.syntraq.de/api"
     }
   }
 }

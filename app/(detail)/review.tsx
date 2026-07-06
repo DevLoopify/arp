@@ -2,10 +2,12 @@ import PrimaryButton from '@/components/PrimaryButton';
 import StarRating from '@/components/StarRating';
 import Colors from '@/constants/Colors';
 import Typography from '@/constants/Typography';
+import { useWorkplaces } from '@/context/WorkplacesContext';
+import { api } from '@/utils/api';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useRef, useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 export default function ReviewScreen() {
   const { workplace } = useLocalSearchParams<{ workplace: string }>();
@@ -13,37 +15,31 @@ export default function ReviewScreen() {
   const [rating, setRating] = useState(4);
   const [comment, setComment] = useState('');
   const [confirmVisible, setConfirmVisible] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const allowRemove = useRef(false);
   const defaultRating = 4;
+  const { addReview } = useWorkplaces();
 
   const hasUnsavedChanges = rating !== defaultRating || comment.trim().length > 0;
 
 
-  const handleSubmit = () => {
-    allowRemove.current = true;
-    const newReview = {
-      id: parsedWorkplace?.reviews ? Math.max(...parsedWorkplace.reviews.map((r: any) => r.id)) + 1 : 1,
-      author: 'Du',
-      rating,
-      comment,
-      date: new Date().toISOString().slice(0, 10),
-    };
-
-    const updatedWorkplace = parsedWorkplace
-      ? { ...parsedWorkplace, reviews: [...(parsedWorkplace.reviews || []), newReview] }
-      : null;
-
-    if (updatedWorkplace) {
-
-      const ratings = updatedWorkplace.reviews.map((r: any) => r.rating);
-      const avg = ratings.reduce((a: number, b: number) => a + b, 0) / ratings.length;
-      updatedWorkplace.rating = Math.round(avg * 10) / 10;
-
-      router.replace({ pathname: '/(detail)/detail', params: { workplace: JSON.stringify(updatedWorkplace) } });
+  const handleSubmit = async () => {
+    if (!parsedWorkplace) {
+      router.back();
       return;
     }
 
-    router.back();
+    allowRemove.current = true;
+    setIsSubmitting(true);
+    try {
+      await addReview(parsedWorkplace.id, { rating, comment });
+      const updatedWorkplace = await api.workplaces.get(parsedWorkplace.id);
+      router.replace({ pathname: '/(detail)/detail', params: { workplace: JSON.stringify(updatedWorkplace) } });
+    } catch (err) {
+      Alert.alert('Could not submit review', err instanceof Error ? err.message : 'Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleBackPress = () => {
@@ -94,7 +90,7 @@ export default function ReviewScreen() {
 
  
 
-          <PrimaryButton label="Submit Review" onPress={handleSubmit} />
+          <PrimaryButton label={isSubmitting ? 'Submitting...' : 'Submit Review'} onPress={handleSubmit} />
 
           <Modal visible={confirmVisible} transparent animationType="fade">
             <View style={styles.modalOverlay}>

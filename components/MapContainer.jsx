@@ -1,10 +1,14 @@
-import { toDisplayWorkplace, useCustomWorkplaces } from '@/context/CustomWorkplacesContext';
-import { useEffect, useMemo, useRef } from 'react';
+import { useWorkplaces } from '@/context/WorkplacesContext';
+import { useEffect, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
 import MapView, { Circle, Marker } from 'react-native-maps';
-import workplacesData from '../data/worplaces.json';
 
-const { initialRegion: fallbackRegion, workplaces: staticWorkplaces } = workplacesData;
+const fallbackRegion = {
+  latitude: 49.8726,
+  longitude: 8.6527,
+  latitudeDelta: 0.02,
+  longitudeDelta: 0.02,
+};
 
 const METERS_PER_DEGREE_LAT = 111320;
 const CIRCLE_PADDING_FACTOR = 1.8; // keeps the circle comfortably inside the viewport
@@ -18,11 +22,7 @@ function regionForRadius(latitude, longitude, radiusMeters) {
 
 export default function MapContainer({ isFullScreen, userLocation, permissionGranted, radius = null, onMarkerPress }) {
   const mapRef = useRef(null);
-  const { customWorkplaces } = useCustomWorkplaces();
-  const workplaces = useMemo(
-    () => [...staticWorkplaces, ...customWorkplaces.map(toDisplayWorkplace)],
-    [customWorkplaces]
-  );
+  const { workplaces } = useWorkplaces();
   const center = userLocation ?? fallbackRegion;
 
   const initialRegion = radius

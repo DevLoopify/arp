@@ -1,25 +1,17 @@
-import { toDisplayWorkplace, useCustomWorkplaces } from '@/context/CustomWorkplacesContext';
+import { useWorkplaces } from '@/context/WorkplacesContext';
 import BottomSheet, { BottomSheetScrollView } from "@gorhom/bottom-sheet";
 import React, { useCallback, useEffect, useMemo, useRef } from "react";
 import { StyleSheet } from "react-native";
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import workplacesData from '../data/worplaces.json';
 import { getDistanceKm } from '../utils/geo';
 import WorkplaceCard from './WorplaceCard';
-
-const { workplaces: staticWorkplaces } = workplacesData;
 
 const ListView = ({ userLocation, selectedWorkplaceId }) => {
   const sheetRef = useRef(null);
   const scrollRef = useRef(null);
-  const { customWorkplaces } = useCustomWorkplaces();
+  const { workplaces } = useWorkplaces();
 
   const snapPoints = useMemo(() => ["25%", "50%", "100%"], []);
-
-  const workplaces = useMemo(
-    () => [...staticWorkplaces, ...customWorkplaces.map(toDisplayWorkplace)],
-    [customWorkplaces]
-  );
 
   const sortedWorkplaces = useMemo(() => {
     const list = userLocation

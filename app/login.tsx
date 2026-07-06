@@ -1,14 +1,31 @@
 import React, { useState } from 'react';
-import { View, Text } from 'react-native';
+import { Alert, View, Text } from 'react-native';
 import InputField from '../components/InputField';
 import PrimaryButton from '@/components/PrimaryButton';
 import TextButton from '@/components/TextButton';
 import { Link, router } from 'expo-router';
 import authStyles from '@/constants/authStyles';
+import { useAuth } from '@/context/AuthContext';
+import { ApiError } from '@/utils/api';
 
 export default function LoginScreen() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const { login } = useAuth();
+
+    const handleLogin = async () => {
+        setIsSubmitting(true);
+        try {
+            await login(email, password);
+            router.replace('/(tabs)/explore');
+        } catch (err) {
+            const message = err instanceof ApiError ? err.message : 'Could not reach the server.';
+            Alert.alert('Login failed', message);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
 
     return (
         <View style={authStyles.container}>
@@ -39,8 +56,8 @@ export default function LoginScreen() {
                 />
                 <View style={{ marginTop: 36 }}>
                     <PrimaryButton
-                        label="Log In"
-                        onPress={() => router.replace('/(tabs)/explore')}
+                        label={isSubmitting ? 'Logging in...' : 'Log In'}
+                        onPress={handleLogin}
                     />
                 </View>
 

@@ -1,0 +1,4 @@
+DROP TABLE IF EXISTS favourites;
+DROP TABLE IF EXISTS reviews;
+DROP TABLE IF EXISTS workplaces;
+DROP TABLE IF EXISTS users;

@@ -1,15 +1,18 @@
-import { CustomWorkplacesProvider } from '@/context/CustomWorkplacesContext';
+import { AuthProvider } from '@/context/AuthContext';
 import { FavouritesProvider } from '@/context/FavouritesContext';
+import { WorkplacesProvider } from '@/context/WorkplacesContext';
 import { Stack } from 'expo-router';
 
 export default function RootLayout() {
   return (
-    <FavouritesProvider>
-      <CustomWorkplacesProvider>
-        <Stack screenOptions={{ headerShown: false }}
-        initialRouteName="login">
-        </Stack>
-      </CustomWorkplacesProvider>
-    </FavouritesProvider>
+    <AuthProvider>
+      <WorkplacesProvider>
+        <FavouritesProvider>
+          <Stack screenOptions={{ headerShown: false }}
+          initialRouteName="login">
+          </Stack>
+        </FavouritesProvider>
+      </WorkplacesProvider>
+    </AuthProvider>
   );
 }
