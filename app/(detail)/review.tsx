@@ -12,22 +12,17 @@ export default function ReviewScreen() {
   const parsedWorkplace = workplace ? JSON.parse(workplace) : null;
   const [rating, setRating] = useState(4);
   const [comment, setComment] = useState('');
-  const [photoAttached, setPhotoAttached] = useState(false);
   const [confirmVisible, setConfirmVisible] = useState(false);
   const allowRemove = useRef(false);
   const defaultRating = 4;
 
-  const hasUnsavedChanges = rating !== defaultRating || comment.trim().length > 0 || photoAttached;
+  const hasUnsavedChanges = rating !== defaultRating || comment.trim().length > 0;
 
 
   const handleSubmit = () => {
     allowRemove.current = true;
-    console.log('Review submitted', { rating, comment, photoAttached });
+    console.log('Review submitted', { rating, comment });
     router.back();
-  };
-
-  const handleAddPhoto = () => {
-    setPhotoAttached(true);
   };
 
   const handleBackPress = () => {
@@ -76,15 +71,7 @@ export default function ReviewScreen() {
             style={styles.commentInput}
           />
 
-          <Text style={styles.sectionLabel}>Pictures</Text>
-          <Pressable style={styles.photoUploadBox} onPress={handleAddPhoto}>
-            <View style={styles.photoUploadContent}>
-              <Ionicons name="camera-outline" size={28} color={Colors.textMuted} />
-              <Text style={styles.photoUploadText}>
-                {photoAttached ? 'Add Photo' : 'Add Photos'}
-              </Text>
-            </View>
-          </Pressable>
+ 
 
           <PrimaryButton label="Submit Review" onPress={handleSubmit} />
 
