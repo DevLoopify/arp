@@ -1,12 +1,16 @@
 import utilityIcons, { getUtilityIcon } from "@/constants/utilityIcons"
+import { useFilters } from "@/context/FiltersContext"
+import { useSearchLocation } from "@/context/SearchLocationContext"
 import { Ionicons } from "@expo/vector-icons"
 import Slider from "@react-native-community/slider"
 import { useRef, useState } from "react"
 import { Animated, Dimensions, Modal, PanResponder, Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
 import useCurrentLocation from "../hooks/useCurrentLocation"
 import MapContainer from "./MapContainer"
+import SelectionChip from "./SelectionChip"
 
 const UTILITIES = Object.keys(utilityIcons)
+const NOISE_LEVELS = [1, 2, 3, 4, 5]
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window")
 const TOGGLE_WIDTH = SCREEN_WIDTH - 32
@@ -22,7 +26,10 @@ export default function FilterPopup({ visible, onClose }) {
     const [selectedUtilities, setSelectedUtilities] = useState([])
     const [showAppliedToast, setShowAppliedToast] = useState(false)
     const slideAnim = useRef(new Animated.Value(0)).current
-    const { location, permissionGranted } = useCurrentLocation()
+    const { location: gpsLocation, permissionGranted } = useCurrentLocation()
+    const { searchLocation } = useSearchLocation()
+    const location = searchLocation ?? gpsLocation
+    const { setFilters, resetFilters } = useFilters()
     const panResponder = useRef(
     PanResponder.create({
   onStartShouldSetPanResponder: () => true,
@@ -60,9 +67,13 @@ export default function FilterPopup({ visible, onClose }) {
         setSelectedUtilities([])
         setWorkMode('solo')
         slideAnim.setValue(0)
+        resetFilters()
     }
 
+    // Work mode has no matching field on a workplace, so it's UI-only for now and isn't
+    // part of what actually gets applied to the list/map.
     const handleApply = () => {
+        setFilters({ noiseLevel, radiusMeters: radius, utilities: selectedUtilities })
         onClose()
         setShowAppliedToast(true)
         setTimeout(() => setShowAppliedToast(false), 1200)
@@ -83,36 +94,14 @@ export default function FilterPopup({ visible, onClose }) {
                 <View>
                   <Text style={styles.title}>Noise Level</Text>
                   <View style={styles.noiseRow}>
-                      <Pressable
-                        onPress={() => setNoiseLevel('quiet')}
-                        style={[
-                          styles.noiseBox,
-                          styles.quietBox,
-                          noiseLevel === 'quiet' && styles.quietBoxSelected,
-                        ]}
-                      >
-                        <Text style={noiseLevel === 'quiet' && styles.noiseTextSelected}>Quiet</Text>
-                      </Pressable>
-                      <Pressable
-                        onPress={() => setNoiseLevel('average')}
-                        style={[
-                          styles.noiseBox,
-                          styles.averageBox,
-                          noiseLevel === 'average' && styles.averageBoxSelected,
-                        ]}
-                      >
-                        <Text style={noiseLevel === 'average' && styles.noiseTextSelected}>Average</Text>
-                      </Pressable>
-                      <Pressable
-                        onPress={() => setNoiseLevel('noisy')}
-                        style={[
-                          styles.noiseBox,
-                          styles.noisyBox,
-                          noiseLevel === 'noisy' && styles.noisyBoxSelected,
-                        ]}
-                      >
-                        <Text style={noiseLevel === 'noisy' && styles.noiseTextSelected}>Noisy</Text>
-                      </Pressable>
+                      {NOISE_LEVELS.map((level) => (
+                        <SelectionChip
+                          key={level}
+                          text={String(level)}
+                          selected={noiseLevel === level}
+                          onPress={() => setNoiseLevel(level)}
+                        />
+                      ))}
                   </View>
                 </View>
                 <View style={styles.radiusSection}>
@@ -159,20 +148,13 @@ export default function FilterPopup({ visible, onClose }) {
                     {UTILITIES.map((utility) => {
                       const selected = selectedUtilities.includes(utility)
                       return (
-                        <Pressable
+                        <SelectionChip
                           key={utility}
+                          text={utility}
+                          icon={<Ionicons name={getUtilityIcon(utility)} size={16} color={selected ? 'white' : '#1E88E5'} />}
+                          selected={selected}
                           onPress={() => toggleUtility(utility)}
-                          style={[styles.utilityChip, selected && styles.utilityChipSelected]}
-                        >
-                          <Ionicons
-                            name={getUtilityIcon(utility)}
-                            size={16}
-                            color={selected ? 'white' : '#1E88E5'}
-                          />
-                          <Text style={[styles.utilityChipText, selected && styles.utilityChipTextSelected]}>
-                            {utility}
-                          </Text>
-                        </Pressable>
+                        />
                       )
                     })}
                   </View>
@@ -250,66 +232,10 @@ utilitiesGrid: {
   paddingHorizontal: 16,
   gap: 8,
 },
-utilityChip: {
-  width: '47%',
-  flexDirection: 'row',
-  alignItems: 'center',
-  gap: 6,
-  paddingVertical: 10,
-  paddingHorizontal: 12,
-  borderRadius: 8,
-  backgroundColor: '#DCEEFB',
-},
-utilityChipSelected: {
-  backgroundColor: '#1E88E5',
-},
-utilityChipText: {
-  fontSize: 14,
-  fontWeight: '500',
-  color: '#1E88E5',
-  textTransform: 'capitalize',
-},
-utilityChipTextSelected: {
-  color: 'white',
-  fontWeight: '700',
-},
 noiseRow: {
   flexDirection: 'row',
-  gap: 8,
+  flexWrap: 'wrap',
   paddingHorizontal: 16,
-},
-noiseBox: {
-  flex: 1,
-  paddingVertical: 12,
-  alignItems: 'center',
-  borderRadius: 8,
-  borderWidth: 2,
-  borderColor: 'transparent',
-},
-quietBox: {
-  backgroundColor: '#DFF5E1',
-},
-quietBoxSelected: {
-  backgroundColor: '#4CAF50',
-  borderColor: '#2E7D32',
-},
-averageBox: {
-  backgroundColor: '#FFF3CD',
-},
-averageBoxSelected: {
-  backgroundColor: '#FFC107',
-  borderColor: '#B28704',
-},
-noisyBox: {
-  backgroundColor: '#FDE0E0',
-},
-noisyBoxSelected: {
-  backgroundColor: '#F44336',
-  borderColor: '#B71C1C',
-},
-noiseTextSelected: {
-  color: 'white',
-  fontWeight: '700',
 },
 radiusSection: {
   marginTop: 24,

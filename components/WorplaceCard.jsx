@@ -7,11 +7,13 @@ import { formatDistance, getDistanceKm } from '@/utils/geo';
 import { resolveImage } from '@/utils/resolveImage';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Link } from 'expo-router';
-import { Dimensions, StyleSheet, Text, View } from 'react-native';
+import { Dimensions, Pressable, StyleSheet, Text, View } from 'react-native';
 import FavouriteButton from './FavouriteButton';
 import ImageCarousel from './ImageCarousel';
+import SelectionChip from './SelectionChip';
 
 const screenWidth = Dimensions.get('window').width;
+const MAX_VISIBLE_UTILITIES = 3;
 
 export default function WorkplaceCard({ workplace, width = screenWidth - 32, userLocation = null }) {
     const { title, description, images, rating, noise, crowdedness, utilities, latitude, longitude } = workplace;
@@ -20,68 +22,79 @@ export default function WorkplaceCard({ workplace, width = screenWidth - 32, use
     const distanceLabel = userLocation
         ? formatDistance(getDistanceKm(userLocation, { latitude, longitude }))
         : null;
+    const visibleUtilities = utilities?.slice(0, MAX_VISIBLE_UTILITIES) ?? [];
+    const hiddenUtilityCount = (utilities?.length ?? 0) - visibleUtilities.length;
 
     return (
-        <View style={[styles.card, { width }]}>
-            <View>
-                {resolvedImages.length > 0 ? (
-                    <ImageCarousel images={resolvedImages} width={width} />
-                ) : (
-                    <View style={[styles.imagePlaceholder, { width }]}>
-                        <Ionicons name="image-outline" size={32} color={Colors.textMuted} />
-                    </View>
-                )}
-                <View style={styles.favouriteButtonPosition}>
-                    <FavouriteButton workplaceId={workplace.id} />
-                </View>
-            </View>
-
-            <View style={styles.content}>
-                <View style={styles.titleRow}>
-                    <View style={styles.titleTextGroup}>
-                        <Link style={styles.title} numberOfLines={1} href={{pathname: '/(detail)/detail', params:{
-                            workplace: JSON.stringify(workplace)
-                        }}}>{title}</Link>
-                        {distanceLabel && <Text style={styles.distance}>({distanceLabel})</Text>}
-                    </View>
-                    <View style={workplaceMetaStyles.metaItem}>
-                        <Ionicons name="star" size={16} color="#FFD700" />
-                        <Text style={workplaceMetaStyles.metaText}>{rating.toFixed(1)}</Text>
-                    </View>
-                </View>
-                <Text style={styles.description} numberOfLines={2}>{description}</Text>
-
-                {utilities?.length > 0 && (
-                    <View style={[workplaceMetaStyles.utilities, styles.utilitiesSpacing]}>
-                        {utilities.map((utility) => (
-                            <View key={utility} style={workplaceMetaStyles.chip}>
-                                <Ionicons name={getUtilityIcon(utility)} size={12} color={Colors.textWhite} />
-                                <Text style={workplaceMetaStyles.chipText}>{utility}</Text>
-                            </View>
-                        ))}
-                    </View>
-                )}
-
-                <View style={styles.metaRow}>
-                    <View style={styles.liveIndicator}>
-                        <View style={styles.liveDot} />
-                        <Text style={styles.liveText}>LIVE</Text>
-                    </View>
-                    <View style={workplaceMetaStyles.liveBox}>
-                        <View style={workplaceMetaStyles.metaItem}>
-                            <Ionicons name="volume-medium-outline" size={16} color={Colors.textMuted} />
-                            <Text style={workplaceMetaStyles.metaText}>{noise}/5</Text>
+        <Link
+            href={{ pathname: '/(detail)/detail', params: { workplace: JSON.stringify(workplace) } }}
+            asChild
+        >
+            <Pressable style={({ pressed }) => [styles.card, { width }, pressed && styles.cardPressed]}>
+                <View>
+                    {resolvedImages.length > 0 ? (
+                        <ImageCarousel images={resolvedImages} width={width} />
+                    ) : (
+                        <View style={[styles.imagePlaceholder, { width }]}>
+                            <Ionicons name="image-outline" size={32} color={Colors.textMuted} />
                         </View>
-                        {crowdLevel && (
-                            <View style={workplaceMetaStyles.metaItem}>
-                                <Ionicons name={crowdLevel.icon} size={16} color={crowdLevel.color} />
-                                <Text style={[workplaceMetaStyles.metaText, { color: crowdLevel.color }]}>{crowdLevel.label}</Text>
-                            </View>
-                        )}
+                    )}
+                    <View style={styles.favouriteButtonPosition}>
+                        <FavouriteButton workplaceId={workplace.id} />
                     </View>
                 </View>
-            </View>
-        </View>
+
+                <View style={styles.content}>
+                    <View style={styles.titleRow}>
+                        <View style={styles.titleTextGroup}>
+                            <Text style={styles.title} numberOfLines={1}>{title}</Text>
+                            {distanceLabel && <Text style={styles.distance}>({distanceLabel})</Text>}
+                        </View>
+                        <View style={workplaceMetaStyles.metaItem}>
+                            <Ionicons name="star" size={16} color="#FFD700" />
+                            <Text style={workplaceMetaStyles.metaText}>{rating.toFixed(1)}</Text>
+                        </View>
+                    </View>
+                    <Text style={styles.description} numberOfLines={2}>{description}</Text>
+
+                    {utilities?.length > 0 && (
+                        <View style={[workplaceMetaStyles.utilities, styles.utilitiesSpacing]}>
+                            {visibleUtilities.map((utility) => (
+                                <SelectionChip
+                                    key={utility}
+                                    text={utility}
+                                    icon={<Ionicons name={getUtilityIcon(utility)} size={12} color={Colors.textWhite} />}
+                                    selected
+                                    small
+                                />
+                            ))}
+                            {hiddenUtilityCount > 0 && (
+                                <SelectionChip key="more" text={`+${hiddenUtilityCount}`} selected small />
+                            )}
+                        </View>
+                    )}
+
+                    <View style={styles.metaRow}>
+                        <View style={styles.liveIndicator}>
+                            <View style={styles.liveDot} />
+                            <Text style={styles.liveText}>LIVE</Text>
+                        </View>
+                        <View style={workplaceMetaStyles.liveBox}>
+                            <View style={workplaceMetaStyles.metaItem}>
+                                <Ionicons name="volume-medium-outline" size={16} color={Colors.textMuted} />
+                                <Text style={workplaceMetaStyles.metaText}>{noise}/5</Text>
+                            </View>
+                            {crowdLevel && (
+                                <View style={workplaceMetaStyles.metaItem}>
+                                    <Ionicons name={crowdLevel.icon} size={16} color={crowdLevel.color} />
+                                    <Text style={[workplaceMetaStyles.metaText, { color: crowdLevel.color }]}>{crowdLevel.label}</Text>
+                                </View>
+                            )}
+                        </View>
+                    </View>
+                </View>
+            </Pressable>
+        </Link>
     );
 }
 
@@ -96,6 +109,9 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.08,
         shadowRadius: 6,
         elevation: 2,
+    },
+    cardPressed: {
+        opacity: 0.85,
     },
     imagePlaceholder: {
         height: 220,

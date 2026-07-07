@@ -1,8 +1,12 @@
+import Colors from '@/constants/Colors';
+import Typography from '@/constants/Typography';
+import { useFilters } from '@/context/FiltersContext';
 import { useWorkplaces } from '@/context/WorkplacesContext';
 import BottomSheet, { BottomSheetScrollView } from "@gorhom/bottom-sheet";
 import React, { useCallback, useEffect, useMemo, useRef } from "react";
-import { StyleSheet } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { applyFilters } from '../utils/applyFilters';
 import { getDistanceKm } from '../utils/geo';
 import WorkplaceCard from './WorplaceCard';
 
@@ -10,15 +14,21 @@ const ListView = ({ userLocation, selectedWorkplaceId }) => {
   const sheetRef = useRef(null);
   const scrollRef = useRef(null);
   const { workplaces } = useWorkplaces();
+  const { filters } = useFilters();
 
   const snapPoints = useMemo(() => ["25%", "50%", "100%"], []);
 
+  const filteredWorkplaces = useMemo(
+    () => applyFilters(workplaces, filters, userLocation),
+    [workplaces, filters, userLocation]
+  );
+
   const sortedWorkplaces = useMemo(() => {
     const list = userLocation
-      ? [...workplaces].sort(
+      ? [...filteredWorkplaces].sort(
           (a, b) => getDistanceKm(userLocation, a) - getDistanceKm(userLocation, b)
         )
-      : workplaces;
+      : filteredWorkplaces;
 
     if (selectedWorkplaceId == null) return list;
 
@@ -26,7 +36,7 @@ const ListView = ({ userLocation, selectedWorkplaceId }) => {
     if (!selected) return list;
 
     return [selected, ...list.filter((workplace) => workplace.id !== selectedWorkplaceId)];
-  }, [workplaces, userLocation, selectedWorkplaceId]);
+  }, [filteredWorkplaces, userLocation, selectedWorkplaceId]);
 
   useEffect(() => {
     if (selectedWorkplaceId != null) {
@@ -52,7 +62,14 @@ const ListView = ({ userLocation, selectedWorkplaceId }) => {
         onChange={handleSheetChange}
       >
         <BottomSheetScrollView ref={scrollRef} contentContainerStyle={styles.contentContainer}>
-          {sortedWorkplaces.map(renderItem)}
+          {sortedWorkplaces.length > 0 ? (
+            sortedWorkplaces.map(renderItem)
+          ) : (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyTitle}>No results found</Text>
+              <Text style={styles.emptyCopy}>Try adjusting or resetting your filters.</Text>
+            </View>
+          )}
         </BottomSheetScrollView>
       </BottomSheet>
     </GestureHandlerRootView>
@@ -66,6 +83,22 @@ const styles = StyleSheet.create({
   contentContainer: {
     backgroundColor: "white",
     padding: 12,
+  },
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: 48,
+    paddingHorizontal: 24,
+  },
+  emptyTitle: {
+    ...Typography.body,
+    fontWeight: '700',
+    color: Colors.textPrimary,
+  },
+  emptyCopy: {
+    ...Typography.caption,
+    marginTop: 6,
+    color: Colors.textMuted,
+    textAlign: 'center',
   },
 });
 

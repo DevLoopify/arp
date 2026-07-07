@@ -3,6 +3,7 @@ import FavouriteButton from "@/components/FavouriteButton";
 import IconButton from "@/components/IconButton";
 import ImageCarousel from "@/components/ImageCarousel";
 import ReviewCard from "@/components/ReviewCard";
+import SelectionChip from "@/components/SelectionChip";
 import Colors from "@/constants/Colors";
 import crowdLevels from "@/constants/crowdLevels";
 import floatingButtonStyle from "@/constants/floatingButtonStyle";
@@ -18,7 +19,8 @@ import { Dimensions, Linking, Pressable, ScrollView, StyleSheet, Text, View } fr
 const screenWidth = Dimensions.get('window').width;
 const screenHeight = Dimensions.get('window').height;
 
-const UTILITY_CHIP_HEIGHT = 36;
+// SelectionChip renders at 38px tall plus its own 5px margin on each side.
+const UTILITY_CHIP_HEIGHT = 48;
 const UTILITY_CHIP_GAP = 10;
 
 function getUtilityRowsPerColumn(count: number) {
@@ -79,10 +81,12 @@ export default function DetailScreen(){
                 <Text style={styles.sectionHeading}>Utilities</Text>
                 <View style={[styles.utilitiesGrid, styles.utilitiesSpacing, { height: utilitiesGridHeight }]}>
                     {utilities?.map((utility: string) => (
-                        <View key={utility} style={[workplaceMetaStyles.chip, styles.utilityChip]}>
-                            <Ionicons name={getUtilityIcon(utility)} size={14} color={Colors.textWhite} />
-                            <Text style={workplaceMetaStyles.chipText}>{utility}</Text>
-                        </View>
+                        <SelectionChip
+                            key={utility}
+                            text={utility}
+                            icon={<Ionicons name={getUtilityIcon(utility)} size={16} color={Colors.textWhite} />}
+                            selected
+                        />
                     ))}
                 </View>
             </View>
@@ -192,10 +196,6 @@ const styles = StyleSheet.create({
     utilitiesSpacing: {
         paddingHorizontal: 12,
         marginTop: 8,
-    },
-    utilityChip: {
-        height: UTILITY_CHIP_HEIGHT,
-        paddingHorizontal: 14,
     },
     sectionHeading: {
         ...Typography.body,

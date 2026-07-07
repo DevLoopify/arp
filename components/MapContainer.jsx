@@ -1,7 +1,9 @@
+import { useFilters } from '@/context/FiltersContext';
 import { useWorkplaces } from '@/context/WorkplacesContext';
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
 import MapView, { Circle, Marker } from 'react-native-maps';
+import { applyFilters } from '../utils/applyFilters';
 
 const fallbackRegion = {
   latitude: 49.8726,
@@ -23,6 +25,11 @@ function regionForRadius(latitude, longitude, radiusMeters) {
 export default function MapContainer({ isFullScreen, userLocation, permissionGranted, radius = null, onMarkerPress }) {
   const mapRef = useRef(null);
   const { workplaces } = useWorkplaces();
+  const { filters } = useFilters();
+  const filteredWorkplaces = useMemo(
+    () => applyFilters(workplaces, filters, userLocation),
+    [workplaces, filters, userLocation]
+  );
   const center = userLocation ?? fallbackRegion;
 
   const initialRegion = radius
@@ -50,7 +57,7 @@ export default function MapContainer({ isFullScreen, userLocation, permissionGra
         showsUserLocation={permissionGranted}
         showsMyLocationButton={permissionGranted}
       >
-        {workplaces.map((place) => (
+        {filteredWorkplaces.map((place) => (
           <Marker
             key={place.id}
             coordinate={{ latitude: place.latitude, longitude: place.longitude }}

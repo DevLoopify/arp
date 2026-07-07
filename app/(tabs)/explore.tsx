@@ -1,12 +1,15 @@
 import ListView from '@/components/ListView';
 import Colors from '@/constants/Colors';
+import { useSearchLocation } from '@/context/SearchLocationContext';
 import useCurrentLocation from '@/hooks/useCurrentLocation';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import MapContainer from '../../components/MapContainer';
 
 export default function ExploreScreen() {
-  const { location: userLocation, permissionGranted } = useCurrentLocation();
+  const { location: gpsLocation, permissionGranted } = useCurrentLocation();
+  const { searchLocation } = useSearchLocation();
+  const userLocation = searchLocation ?? gpsLocation;
   const [selectedWorkplaceId, setSelectedWorkplaceId] = useState<number | null>(null);
 
   return (

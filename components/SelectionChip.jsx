@@ -4,19 +4,21 @@ export default function SelectionChip({
   text,
   icon,
   selected,
-  onPress,
+  onPress = () => {},
+  small = false,
 }) {
   return (
     <TouchableOpacity
       style={[
         styles.container,
         selected ? styles.selected : styles.unselected,
+        small && styles.containerSmall,
       ]}
       onPress={onPress}
       activeOpacity={0.7}
     >
       {icon && (
-        <View style={styles.icon}>
+        <View style={[styles.icon, small && styles.iconSmall]}>
           {icon}
         </View>
       )}
@@ -25,6 +27,7 @@ export default function SelectionChip({
         style={[
           styles.text,
           selected ? styles.selectedText : styles.unselectedText,
+          small && styles.textSmall,
         ]}
       >
         {text}
@@ -44,6 +47,13 @@ const styles = StyleSheet.create({
     margin: 5,
   },
 
+  containerSmall: {
+    height: 26,
+    paddingHorizontal: 10,
+    borderRadius: 13,
+    margin: 3,
+  },
+
   selected: {
     backgroundColor: "#2563EB",
   },
@@ -60,9 +70,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
 
+  iconSmall: {
+    marginRight: 4,
+  },
+
   text: {
     fontSize: 14,
     fontWeight: "500",
+  },
+
+  textSmall: {
+    fontSize: 12,
   },
 
   selectedText: {

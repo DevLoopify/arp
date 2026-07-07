@@ -7,15 +7,15 @@ import { api } from '@/utils/api';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useRef, useState } from 'react';
-import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 export default function ReviewScreen() {
   const { workplace } = useLocalSearchParams<{ workplace: string }>();
   const parsedWorkplace = workplace ? JSON.parse(workplace) : null;
   const [rating, setRating] = useState(4);
   const [comment, setComment] = useState('');
-  const [confirmVisible, setConfirmVisible] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const allowRemove = useRef(false);
   const defaultRating = 4;
   const { addReview } = useWorkplaces();
@@ -28,6 +28,12 @@ export default function ReviewScreen() {
       router.back();
       return;
     }
+
+    if (!comment.trim()) {
+      setError('Please write a comment before submitting your review.');
+      return;
+    }
+    setError(null);
 
     allowRemove.current = true;
     setIsSubmitting(true);
@@ -43,24 +49,43 @@ export default function ReviewScreen() {
   };
 
   const handleBackPress = () => {
-    if (hasUnsavedChanges) {
-      setConfirmVisible(true);
+    if (!hasUnsavedChanges) {
+      router.back();
       return;
     }
 
-    router.back();
-  };
-
-  const handleDiscard = () => {
-    allowRemove.current = true;
-    setConfirmVisible(false);
-    router.back();
-  };
-
-  const handleSaveAndClose = () => {
-    allowRemove.current = true;
-    setConfirmVisible(false);
-    handleSubmit();
+    Alert.alert(
+      'Unsaved changes',
+      'You have unsaved changes. Do you want to save them as a draft or discard them?',
+      [
+        { text: 'Keep Editing', style: 'cancel' },
+        {
+          text: 'Discard',
+          style: 'destructive',
+          onPress: () => {
+            allowRemove.current = true;
+            router.back();
+          },
+        },
+        {
+          text: 'Save',
+          onPress: () => {
+            if (!comment.trim()) {
+              // iOS silently drops an Alert triggered right as the previous one is
+              // still dismissing, so give it a moment before showing the follow-up.
+              setTimeout(() => {
+                Alert.alert('Add a comment', 'Please write a comment before saving your review.');
+              }, 400);
+              return;
+            }
+            allowRemove.current = true;
+            setTimeout(() => {
+              handleSubmit();
+            }, 400);
+          },
+        },
+      ]
+    );
   };
 
   return (
@@ -88,28 +113,9 @@ export default function ReviewScreen() {
             style={styles.commentInput}
           />
 
- 
+          {error && <Text style={styles.errorText}>{error}</Text>}
 
           <PrimaryButton label={isSubmitting ? 'Submitting...' : 'Submit Review'} onPress={handleSubmit} />
-
-          <Modal visible={confirmVisible} transparent animationType="fade">
-            <View style={styles.modalOverlay}>
-              <View style={styles.modalContent}>
-                <Text style={styles.modalTitle}>Unsaved changes</Text>
-                <Text style={styles.modalMessage}>
-                  You've made changes to your review. Do you want to discard them or save before leaving?
-                </Text>
-                <View style={styles.modalActions}>
-                  <Pressable style={[styles.modalButton, styles.discardButton]} onPress={handleDiscard}>
-                    <Text style={styles.discardText}>Discard</Text>
-                  </Pressable>
-                  <Pressable style={[styles.modalButton, styles.saveButton]} onPress={handleSaveAndClose}>
-                    <Text style={styles.saveText}>Save</Text>
-                  </Pressable>
-                </View>
-              </View>
-            </View>
-          </Modal>
         </ScrollView>
       ) : (
         <View style={styles.emptyState}>
@@ -163,6 +169,10 @@ const styles = StyleSheet.create({
   ratingWrapper: {
     alignItems: 'flex-start',
   },
+  errorText: {
+    ...Typography.caption,
+    color: Colors.live,
+  },
   commentInput: {
     minHeight: 140,
     borderWidth: 1,
@@ -199,65 +209,6 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 8,
     marginBottom: 20,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
-  },
-  modalContent: {
-    width: '100%',
-    maxWidth: 400,
-    backgroundColor: Colors.backgroundWhite,
-    borderRadius: 20,
-    padding: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.12,
-    shadowRadius: 24,
-    elevation: 10,
-  },
-  modalTitle: {
-    ...Typography.sectionTitle,
-    fontSize: 18,
-    marginBottom: 12,
-    color: Colors.textPrimary,
-  },
-  modalMessage: {
-    ...Typography.body,
-    fontSize: 15,
-    color: Colors.textMuted,
-    marginBottom: 20,
-    lineHeight: 22,
-  },
-  modalActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 12,
-  },
-  modalButton: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 14,
-    alignItems: 'center',
-  },
-  discardButton: {
-    backgroundColor: Colors.backgroundBase,
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-  },
-  saveButton: {
-    backgroundColor: Colors.primary,
-  },
-  discardText: {
-    ...Typography.button,
-    color: Colors.textPrimary,
-  },
-  saveText: {
-    ...Typography.button,
-    color: Colors.backgroundWhite,
   },
   emptyState: {
     flex: 1,

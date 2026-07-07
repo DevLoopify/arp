@@ -6,11 +6,12 @@ import Typography from '@/constants/Typography';
 import utilityIcons, { getUtilityIcon } from '@/constants/utilityIcons';
 import { useWorkplaces } from '@/context/WorkplacesContext';
 import useCurrentLocation from '@/hooks/useCurrentLocation';
+import { clearWorkspaceDraft, getWorkspaceDraft, saveWorkspaceDraft } from '@/utils/workspaceDraft';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, BackHandler, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import MapView, { MapPressEvent, Marker } from 'react-native-maps';
 
 const UTILITIES = Object.keys(utilityIcons);
@@ -23,11 +24,14 @@ const FALLBACK_REGION = {
 };
 
 export default function CreateWorkspace() {
-    const [name, setName] = useState('');
-    const [description, setDescription] = useState('');
-    const [selectedUtilities, setSelectedUtilities] = useState<string[]>([]);
-    const [photoUris, setPhotoUris] = useState<string[] | null>(null);
-    const [markerCoordinate, setMarkerCoordinate] = useState<{ latitude: number; longitude: number } | null>(null);
+    const [draft] = useState(() => getWorkspaceDraft());
+    const [name, setName] = useState(draft?.name ?? '');
+    const [description, setDescription] = useState(draft?.description ?? '');
+    const [selectedUtilities, setSelectedUtilities] = useState<string[]>(draft?.selectedUtilities ?? []);
+    const [photoUris, setPhotoUris] = useState<string[] | null>(draft?.photoUris.length ? draft.photoUris : null);
+    const [markerCoordinate, setMarkerCoordinate] = useState<{ latitude: number; longitude: number } | null>(
+        draft?.markerCoordinate ?? null
+    );
     const [error, setError] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const { location, permissionGranted } = useCurrentLocation() as {
@@ -63,6 +67,53 @@ export default function CreateWorkspace() {
         setMarkerCoordinate(event.nativeEvent.coordinate);
     };
 
+    const hasUnsavedChanges = Boolean(
+        name.trim() || description.trim() || selectedUtilities.length || photoUris?.length || markerCoordinate
+    );
+
+    const handleLeaveAttempt = () => {
+        if (!hasUnsavedChanges) {
+            router.back();
+            return;
+        }
+        Alert.alert(
+            'Unsaved changes',
+            'You have unsaved changes. Do you want to save them as a draft or discard them?',
+            [
+                { text: 'Keep Editing', style: 'cancel' },
+                {
+                    text: 'Discard',
+                    style: 'destructive',
+                    onPress: () => {
+                        clearWorkspaceDraft();
+                        router.back();
+                    },
+                },
+                {
+                    text: 'Save',
+                    onPress: () => {
+                        saveWorkspaceDraft({
+                            name,
+                            description,
+                            selectedUtilities,
+                            photoUris: photoUris ?? [],
+                            markerCoordinate,
+                        });
+                        router.back();
+                    },
+                },
+            ]
+        );
+    };
+
+    useEffect(() => {
+        const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+            handleLeaveAttempt();
+            return true;
+        });
+        return () => subscription.remove();
+    }, [hasUnsavedChanges, name, description, selectedUtilities, photoUris, markerCoordinate]);
+
     const initialRegion = location
         ? { ...location, latitudeDelta: 0.02, longitudeDelta: 0.02 }
         : FALLBACK_REGION;
@@ -96,6 +147,7 @@ export default function CreateWorkspace() {
                 location: markerCoordinate!,
                 photoUris: photoUris ?? [],
             });
+            clearWorkspaceDraft();
             router.back();
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Could not create the workplace.');
@@ -107,7 +159,7 @@ export default function CreateWorkspace() {
     return (
         <View style={styles.container}>
             <View style={styles.header}>
-                <Pressable style={styles.backButton} onPress={() => router.back()}>
+                <Pressable style={styles.backButton} onPress={handleLeaveAttempt}>
                     <Ionicons name="arrow-back" size={24} color={Colors.textPrimary} />
                 </Pressable>
                 <Text style={styles.headerTitle}>Create Workspace</Text>
@@ -179,7 +231,7 @@ export default function CreateWorkspace() {
                 {error && <Text style={[Typography.caption, styles.errorText]}>{error}</Text>}
 
                 <View style={styles.footer}>
-                    <Pressable style={styles.cancelButton} onPress={() => router.back()}>
+                    <Pressable style={styles.cancelButton} onPress={handleLeaveAttempt}>
                         <Text style={styles.cancelButtonText}>Cancel</Text>
                     </Pressable>
                     <View style={styles.addButton}>

@@ -1,13 +1,16 @@
 import FilterPopup from '@/components/FilterPopup';
 import IconButton from '@/components/IconButton';
+import LocationSearchModal from '@/components/LocationSearchModal';
 import Colors from '@/constants/Colors';
 import Typography from '@/constants/Typography';
 import { Ionicons } from '@expo/vector-icons';
 import { router, Tabs } from 'expo-router';
 import { useState } from 'react';
+import { View } from 'react-native';
 
 export default function TabLayout() {
   const [filterVisible, setFilterVisible] = useState(false);
+  const [searchVisible, setSearchVisible] = useState(false);
 
   return (
     <>
@@ -38,10 +41,16 @@ export default function TabLayout() {
               <Ionicons name={focused ? 'search' : 'search-outline'} size={size} color={color} />
             ),
             headerLeft: () => (
-              <IconButton
-                icon={<Ionicons name="add" size={24} />}
-                clickHandler={() => router.push('/create_workspace')}
-              />
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+                <IconButton
+                  icon={<Ionicons name="add" size={24} />}
+                  clickHandler={() => router.push('/create_workspace')}
+                />
+                <IconButton
+                  icon={<Ionicons name="search" size={22} />}
+                  clickHandler={() => setSearchVisible(true)}
+                />
+              </View>
             ),
             headerRight: () => (
               <IconButton
@@ -72,6 +81,7 @@ export default function TabLayout() {
       </Tabs>
 
       <FilterPopup visible={filterVisible} onClose={() => setFilterVisible(false)} />
+      <LocationSearchModal visible={searchVisible} onClose={() => setSearchVisible(false)} />
     </>
   );
 }

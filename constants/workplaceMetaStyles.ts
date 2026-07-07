@@ -28,20 +28,6 @@ const workplaceMetaStyles = StyleSheet.create({
         flexWrap: 'wrap',
         gap: 6,
     },
-    chip: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 4,
-        backgroundColor: Colors.primary,
-        borderRadius: 999,
-        paddingHorizontal: 10,
-        paddingVertical: 4,
-    },
-    chipText: {
-        ...Typography.caption,
-        fontSize: 12,
-        color: Colors.textWhite,
-    },
 });
 
 export default workplaceMetaStyles;

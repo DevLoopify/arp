@@ -28,7 +28,6 @@ async function request<T>(path: string, options: RequestInit & { token?: string 
             const body = await res.json();
             message = body.error ?? message;
         } catch {
-            // response wasn't JSON; fall back to statusText
         }
         throw new ApiError(res.status, message);
     }
@@ -37,7 +36,6 @@ async function request<T>(path: string, options: RequestInit & { token?: string 
     return res.json();
 }
 
-// Turns a path returned by the API (e.g. "/uploads/xyz.jpg") into an absolute URL.
 export function resolveApiUrl(path: string): string {
     if (/^https?:\/\//.test(path)) return path;
     return `${API_URL.replace(/\/api\/?$/, '')}${path}`;
@@ -97,7 +95,6 @@ export const api = {
             const mimeType = ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : 'image/jpeg';
 
             const form = new FormData();
-            // React Native's fetch accepts this shape for file uploads even though it isn't a spec-compliant Blob.
             form.append('image', { uri: fileUri, name: filename, type: mimeType } as unknown as Blob);
 
             const res = await fetch(`${API_URL}/uploads`, {
