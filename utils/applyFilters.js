@@ -2,7 +2,7 @@ import { getDistanceKm } from './geo';
 
 function matchesNoise(workplace, noiseLevel) {
     if (!noiseLevel) return true;
-    return workplace.noise === noiseLevel;
+    return workplace.noise <= noiseLevel;
 }
 
 function matchesUtilities(workplace, utilities) {

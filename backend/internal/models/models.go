@@ -3,14 +3,22 @@ package models
 import "time"
 
 type User struct {
-	ID        int       `json:"id"`
-	Name      string    `json:"name"`
-	Email     string    `json:"email"`
-	CreatedAt time.Time `json:"createdAt"`
+	ID           int       `json:"id"`
+	Name         string    `json:"name"`
+	Email        string    `json:"email"`
+	AvatarURL    string    `json:"avatarUrl"`
+	NoiseLevel   int       `json:"noiseLevel"`
+	Radius       int       `json:"radius"`
+	WorkMode     string    `json:"workMode"`
+	Utilities    []string  `json:"utilities"`
+	DistanceUnit string    `json:"unit"`
+	Language     string    `json:"language"`
+	CreatedAt    time.Time `json:"createdAt"`
 }
 
 type Review struct {
 	ID      int    `json:"id"`
+	UserID  *int   `json:"userId,omitempty"`
 	Author  string `json:"author"`
 	Rating  int    `json:"rating"`
 	Comment string `json:"comment"`

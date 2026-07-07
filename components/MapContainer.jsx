@@ -22,7 +22,21 @@ function regionForRadius(latitude, longitude, radiusMeters) {
   return { latitude, longitude, latitudeDelta, longitudeDelta };
 }
 
-export default function MapContainer({ isFullScreen, userLocation, permissionGranted, radius = null, onMarkerPress }) {
+// Shifts the map's center southward so the point renders higher up on screen,
+// in the middle of whatever portion isn't covered by an overlay (e.g. a bottom sheet).
+function applyCenterOffset(region, centerOffsetRatio) {
+  if (!centerOffsetRatio) return region;
+  return { ...region, latitude: region.latitude - region.latitudeDelta * centerOffsetRatio };
+}
+
+export default function MapContainer({
+  isFullScreen,
+  userLocation,
+  permissionGranted,
+  radius = null,
+  onMarkerPress,
+  centerOffsetRatio = 0,
+}) {
   const mapRef = useRef(null);
   const { workplaces } = useWorkplaces();
   const { filters } = useFilters();
@@ -32,18 +46,24 @@ export default function MapContainer({ isFullScreen, userLocation, permissionGra
   );
   const center = userLocation ?? fallbackRegion;
 
-  const initialRegion = radius
-    ? regionForRadius(center.latitude, center.longitude, radius)
-    : {
-        ...center,
-        latitudeDelta: fallbackRegion.latitudeDelta,
-        longitudeDelta: fallbackRegion.longitudeDelta,
-      };
+  const initialRegion = applyCenterOffset(
+    radius
+      ? regionForRadius(center.latitude, center.longitude, radius)
+      : {
+          ...center,
+          latitudeDelta: fallbackRegion.latitudeDelta,
+          longitudeDelta: fallbackRegion.longitudeDelta,
+        },
+    centerOffsetRatio
+  );
 
   useEffect(() => {
     if (!radius) return;
-    mapRef.current?.animateToRegion(regionForRadius(center.latitude, center.longitude, radius), 300);
-  }, [radius, center.latitude, center.longitude]);
+    mapRef.current?.animateToRegion(
+      applyCenterOffset(regionForRadius(center.latitude, center.longitude, radius), centerOffsetRatio),
+      300
+    );
+  }, [radius, center.latitude, center.longitude, centerOffsetRatio]);
 
   return (
     <View style={{ height: isFullScreen ? '100%' : '65%' }}>

@@ -1,13 +1,16 @@
 import Colors from '@/constants/Colors';
 import crowdLevels from '@/constants/crowdLevels';
+import floatingButtonStyle from '@/constants/floatingButtonStyle';
 import Typography from '@/constants/Typography';
 import { getUtilityIcon } from '@/constants/utilityIcons';
 import workplaceMetaStyles from '@/constants/workplaceMetaStyles';
+import { useAuth } from '@/context/AuthContext';
+import { useWorkplaces } from '@/context/WorkplacesContext';
 import { formatDistance, getDistanceKm } from '@/utils/geo';
 import { resolveImage } from '@/utils/resolveImage';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { Link } from 'expo-router';
-import { Dimensions, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Link, router } from 'expo-router';
+import { Alert, Dimensions, Pressable, StyleSheet, Text, View } from 'react-native';
 import FavouriteButton from './FavouriteButton';
 import ImageCarousel from './ImageCarousel';
 import SelectionChip from './SelectionChip';
@@ -15,22 +18,70 @@ import SelectionChip from './SelectionChip';
 const screenWidth = Dimensions.get('window').width;
 const MAX_VISIBLE_UTILITIES = 3;
 
-export default function WorkplaceCard({ workplace, width = screenWidth - 32, userLocation = null }) {
-    const { title, description, images, rating, noise, crowdedness, utilities, latitude, longitude } = workplace;
+export default function WorkplaceCard({ workplace, width = screenWidth - 32, userLocation = null, highlighted = false }) {
+    const { title, description, images, rating, noise, crowdedness, crowdByHourToday, utilities, latitude, longitude } = workplace;
+    const { user } = useAuth();
+    const { deleteWorkplace } = useWorkplaces();
+    const isOwner = user != null && workplace.ownerUserId === user.id;
     const resolvedImages = images.map(resolveImage).filter(Boolean);
-    const crowdLevel = crowdLevels[crowdedness];
+    const liveCrowdedness = crowdByHourToday?.[new Date().getHours()] ?? crowdedness;
+    const crowdLevel = crowdLevels[liveCrowdedness];
     const distanceLabel = userLocation
         ? formatDistance(getDistanceKm(userLocation, { latitude, longitude }))
         : null;
     const visibleUtilities = utilities?.slice(0, MAX_VISIBLE_UTILITIES) ?? [];
     const hiddenUtilityCount = (utilities?.length ?? 0) - visibleUtilities.length;
 
+    const handleEditPress = () => {
+        Alert.alert(title, 'What would you like to do?', [
+            { text: 'Cancel', style: 'cancel' },
+            {
+                text: 'Edit',
+                onPress: () => router.push({ pathname: '/create_workspace', params: { workplace: JSON.stringify(workplace) } }),
+            },
+            {
+                text: 'Delete',
+                style: 'destructive',
+                onPress: () => {
+                    Alert.alert(
+                        'Delete workplace?',
+                        `This will permanently delete "${title}" and its reviews. This cannot be undone.`,
+                        [
+                            { text: 'Cancel', style: 'cancel' },
+                            {
+                                text: 'Delete',
+                                style: 'destructive',
+                                onPress: async () => {
+                                    try {
+                                        await deleteWorkplace(workplace.id);
+                                    } catch (err) {
+                                        Alert.alert(
+                                            'Could not delete workplace',
+                                            err instanceof Error ? err.message : 'Please try again.'
+                                        );
+                                    }
+                                },
+                            },
+                        ]
+                    );
+                },
+            },
+        ]);
+    };
+
     return (
         <Link
             href={{ pathname: '/(detail)/detail', params: { workplace: JSON.stringify(workplace) } }}
             asChild
         >
-            <Pressable style={({ pressed }) => [styles.card, { width }, pressed && styles.cardPressed]}>
+            <Pressable
+                style={({ pressed }) => [
+                    styles.card,
+                    { width },
+                    highlighted && styles.cardHighlighted,
+                    pressed && styles.cardPressed,
+                ]}
+            >
                 <View>
                     {resolvedImages.length > 0 ? (
                         <ImageCarousel images={resolvedImages} width={width} />
@@ -42,6 +93,13 @@ export default function WorkplaceCard({ workplace, width = screenWidth - 32, use
                     <View style={styles.favouriteButtonPosition}>
                         <FavouriteButton workplaceId={workplace.id} />
                     </View>
+                    {isOwner && (
+                        <View style={styles.editButtonPosition}>
+                            <Pressable style={floatingButtonStyle.button} onPress={handleEditPress} hitSlop={8}>
+                                <Ionicons name="pencil" size={16} color={Colors.textPrimary} />
+                            </Pressable>
+                        </View>
+                    )}
                 </View>
 
                 <View style={styles.content}>
@@ -113,6 +171,10 @@ const styles = StyleSheet.create({
     cardPressed: {
         opacity: 0.85,
     },
+    cardHighlighted: {
+        borderWidth: 2,
+        borderColor: Colors.accent,
+    },
     imagePlaceholder: {
         height: 220,
         backgroundColor: Colors.backgroundBase,
@@ -123,6 +185,11 @@ const styles = StyleSheet.create({
         position: 'absolute',
         top: 12,
         right: 12,
+    },
+    editButtonPosition: {
+        position: 'absolute',
+        top: 12,
+        left: 12,
     },
     content: {
         padding: 12,

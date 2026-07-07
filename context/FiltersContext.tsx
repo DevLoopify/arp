@@ -1,4 +1,5 @@
-import { createContext, ReactNode, useContext, useMemo, useState } from 'react';
+import { useUserProfile } from '@/context/UserProfileContext';
+import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 export type NoiseLevel = 1 | 2 | 3 | 4 | 5 | null;
 
@@ -16,6 +17,7 @@ export const DEFAULT_FILTERS: Filters = {
 
 type FiltersContextValue = {
     filters: Filters;
+    defaultFilters: Filters;
     setFilters: (filters: Filters) => void;
     resetFilters: () => void;
 };
@@ -23,11 +25,33 @@ type FiltersContextValue = {
 const FiltersContext = createContext<FiltersContextValue | undefined>(undefined);
 
 export function FiltersProvider({ children }: { children: ReactNode }) {
+    const { settings, isLoaded } = useUserProfile();
+
+    const defaultFilters: Filters = useMemo(
+        () => ({
+            noiseLevel: settings.noiseLevel,
+            radiusMeters: settings.radius,
+            utilities: settings.utilities,
+        }),
+        [settings]
+    );
+
     const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
+    const hasAppliedProfileDefaults = useRef(false);
+
+    useEffect(() => {
+        if (!isLoaded || hasAppliedProfileDefaults.current) return;
+        hasAppliedProfileDefaults.current = true;
+        setFilters(defaultFilters);
+    }, [isLoaded, defaultFilters]);
+
+    const resetFilters = useCallback(() => {
+        setFilters(defaultFilters);
+    }, [defaultFilters]);
 
     const value = useMemo(
-        () => ({ filters, setFilters, resetFilters: () => setFilters(DEFAULT_FILTERS) }),
-        [filters]
+        () => ({ filters, defaultFilters, setFilters, resetFilters }),
+        [filters, defaultFilters, resetFilters]
     );
 
     return <FiltersContext.Provider value={value}>{children}</FiltersContext.Provider>;

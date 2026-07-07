@@ -1,0 +1,8 @@
+ALTER TABLE users
+    ADD COLUMN avatar_url TEXT NOT NULL DEFAULT '',
+    ADD COLUMN noise_level TEXT NOT NULL DEFAULT 'average',
+    ADD COLUMN radius INTEGER NOT NULL DEFAULT 500,
+    ADD COLUMN work_mode TEXT NOT NULL DEFAULT 'solo',
+    ADD COLUMN utilities TEXT[] NOT NULL DEFAULT '{}',
+    ADD COLUMN distance_unit TEXT NOT NULL DEFAULT 'km',
+    ADD COLUMN language TEXT NOT NULL DEFAULT 'en';

@@ -1,10 +1,8 @@
-import { Directory, File, Paths } from 'expo-file-system';
-import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { useAuth } from '@/context/AuthContext';
+import { api, resolveApiUrl } from '@/utils/api';
+import { createContext, ReactNode, useCallback, useContext, useMemo } from 'react';
 
-const profileFile = new File(Paths.document, 'user_profile_settings.json');
-const avatarsDir = new Directory(Paths.document, 'profile-photos');
-
-export type NoiseLevel = 'quiet' | 'average' | 'noisy';
+export type NoiseLevel = 1 | 2 | 3 | 4 | 5;
 export type WorkMode = 'solo' | 'group';
 export type DistanceUnit = 'km' | 'mi';
 export type Language = 'en' | 'de';
@@ -23,32 +21,13 @@ export type UserProfileSettings = {
 export const DEFAULT_PROFILE_SETTINGS: UserProfileSettings = {
     name: '',
     avatarUri: null,
-    noiseLevel: 'average',
+    noiseLevel: 3,
     radius: 500,
     workMode: 'solo',
     utilities: [],
     unit: 'km',
     language: 'en',
 };
-
-function persistAvatar(uri: string | null): string | null {
-    if (!uri) return null;
-    if (uri.startsWith(avatarsDir.uri)) return uri;
-
-    if (!avatarsDir.exists) {
-        avatarsDir.create();
-    }
-    const source = new File(uri);
-    const destination = new File(avatarsDir, `${Date.now()}-${source.name}`);
-    source.copy(destination);
-    return destination.uri;
-}
-
-async function loadProfileSettings(): Promise<UserProfileSettings> {
-    if (!profileFile.exists) return DEFAULT_PROFILE_SETTINGS;
-    const raw = await profileFile.text();
-    return { ...DEFAULT_PROFILE_SETTINGS, ...JSON.parse(raw) };
-}
 
 type UserProfileContextValue = {
     settings: UserProfileSettings;
@@ -59,24 +38,65 @@ type UserProfileContextValue = {
 const UserProfileContext = createContext<UserProfileContextValue | undefined>(undefined);
 
 export function UserProfileProvider({ children }: { children: ReactNode }) {
-    const [settings, setSettings] = useState<UserProfileSettings>(DEFAULT_PROFILE_SETTINGS);
-    const [isLoaded, setIsLoaded] = useState(false);
+    const { user, token, isLoading: authLoading, updateUser } = useAuth();
 
-    useEffect(() => {
-        loadProfileSettings().then((loaded) => {
-            setSettings(loaded);
-            setIsLoaded(true);
-        });
-    }, []);
+    const settings: UserProfileSettings = useMemo(() => {
+        if (!user) return DEFAULT_PROFILE_SETTINGS;
+        return {
+            name: user.name,
+            avatarUri: user.avatarUrl ? resolveApiUrl(user.avatarUrl) : null,
+            noiseLevel: user.noiseLevel as NoiseLevel,
+            radius: user.radius,
+            workMode: user.workMode as WorkMode,
+            utilities: user.utilities,
+            unit: user.unit as DistanceUnit,
+            language: user.language as Language,
+        };
+    }, [user]);
 
-    const saveSettings = useCallback(async (next: UserProfileSettings) => {
-        const toSave: UserProfileSettings = { ...next, avatarUri: persistAvatar(next.avatarUri) };
-        profileFile.write(JSON.stringify(toSave, null, 2));
-        setSettings(toSave);
-        return toSave;
-    }, []);
+    const saveSettings = useCallback(
+        async (next: UserProfileSettings) => {
+            if (!token) throw new Error('You must be logged in to update your profile.');
 
-    const value = useMemo(() => ({ settings, isLoaded, saveSettings }), [settings, isLoaded, saveSettings]);
+            let avatarUrl = user?.avatarUrl ?? '';
+            if (next.avatarUri && next.avatarUri !== settings.avatarUri) {
+                const uploaded = await api.uploads.upload(token, next.avatarUri);
+                avatarUrl = uploaded.url;
+            } else if (!next.avatarUri) {
+                avatarUrl = '';
+            }
+
+            const updated = await api.auth.updateProfile(token, {
+                name: next.name,
+                avatarUrl,
+                noiseLevel: next.noiseLevel,
+                radius: next.radius,
+                workMode: next.workMode,
+                utilities: next.utilities,
+                unit: next.unit,
+                language: next.language,
+            });
+
+            updateUser(updated);
+
+            return {
+                name: updated.name,
+                avatarUri: updated.avatarUrl ? resolveApiUrl(updated.avatarUrl) : null,
+                noiseLevel: updated.noiseLevel as NoiseLevel,
+                radius: updated.radius,
+                workMode: updated.workMode as WorkMode,
+                utilities: updated.utilities,
+                unit: updated.unit as DistanceUnit,
+                language: updated.language as Language,
+            };
+        },
+        [token, user, settings.avatarUri, updateUser]
+    );
+
+    const value = useMemo(
+        () => ({ settings, isLoaded: !authLoading, saveSettings }),
+        [settings, authLoading, saveSettings]
+    );
 
     return <UserProfileContext.Provider value={value}>{children}</UserProfileContext.Provider>;
 }

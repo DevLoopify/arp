@@ -26,13 +26,22 @@ func (s *Server) Router() http.Handler {
 		r.Post("/register", s.Register)
 		r.Post("/login", s.Login)
 		r.With(s.Auth.Middleware).Get("/me", s.Me)
+		r.With(s.Auth.Middleware).Put("/me", s.UpdateProfile)
 	})
 
 	r.Route("/api/workplaces", func(r chi.Router) {
 		r.Get("/", s.ListWorkplaces)
 		r.Get("/{id}", s.GetWorkplace)
 		r.With(s.Auth.Middleware).Post("/", s.CreateWorkplace)
+		r.With(s.Auth.Middleware).Put("/{id}", s.UpdateWorkplace)
+		r.With(s.Auth.Middleware).Delete("/{id}", s.DeleteWorkplace)
 		r.With(s.Auth.Middleware).Post("/{id}/reviews", s.CreateReview)
+	})
+
+	r.Route("/api/reviews", func(r chi.Router) {
+		r.Use(s.Auth.Middleware)
+		r.Put("/{id}", s.UpdateReview)
+		r.Delete("/{id}", s.DeleteReview)
 	})
 
 	r.Route("/api/favourites", func(r chi.Router) {

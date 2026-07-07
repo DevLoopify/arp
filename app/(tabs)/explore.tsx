@@ -20,9 +20,14 @@ export default function ExploreScreen() {
           userLocation={userLocation}
           permissionGranted={permissionGranted}
           onMarkerPress={setSelectedWorkplaceId}
+          centerOffsetRatio={0.25}
         />
         <View style={styles.listViewOverlay}>
-          <ListView userLocation={userLocation} selectedWorkplaceId={selectedWorkplaceId} />
+          <ListView
+            userLocation={userLocation}
+            selectedWorkplaceId={selectedWorkplaceId}
+            onSelectWorkplace={setSelectedWorkplaceId}
+          />
         </View>
       </View>
     </View>

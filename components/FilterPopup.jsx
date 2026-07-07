@@ -1,9 +1,11 @@
+import InfoTooltip from "@/components/InfoTooltip"
 import utilityIcons, { getUtilityIcon } from "@/constants/utilityIcons"
 import { useFilters } from "@/context/FiltersContext"
 import { useSearchLocation } from "@/context/SearchLocationContext"
+import { useUserProfile } from "@/context/UserProfileContext"
 import { Ionicons } from "@expo/vector-icons"
 import Slider from "@react-native-community/slider"
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Animated, Dimensions, Modal, PanResponder, Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
 import useCurrentLocation from "../hooks/useCurrentLocation"
 import MapContainer from "./MapContainer"
@@ -29,7 +31,19 @@ export default function FilterPopup({ visible, onClose }) {
     const { location: gpsLocation, permissionGranted } = useCurrentLocation()
     const { searchLocation } = useSearchLocation()
     const location = searchLocation ?? gpsLocation
-    const { setFilters, resetFilters } = useFilters()
+    const { filters, defaultFilters, setFilters, resetFilters } = useFilters()
+    const { settings: profileSettings } = useUserProfile()
+
+    // Reflect whatever is currently applied (which defaults to the profile's
+    // workplace preferences) each time the sheet is opened.
+    useEffect(() => {
+        if (!visible) return
+        setNoiseLevel(filters.noiseLevel)
+        setRadius(filters.radiusMeters ?? defaultFilters.radiusMeters ?? 500)
+        setSelectedUtilities(filters.utilities)
+        setWorkMode(profileSettings.workMode)
+        slideAnim.setValue(profileSettings.workMode === 'group' ? 1 : 0)
+    }, [visible])
     const panResponder = useRef(
     PanResponder.create({
   onStartShouldSetPanResponder: () => true,
@@ -62,11 +76,11 @@ export default function FilterPopup({ visible, onClose }) {
     }
 
     const handleReset = () => {
-        setNoiseLevel(null)
-        setRadius(500)
-        setSelectedUtilities([])
-        setWorkMode('solo')
-        slideAnim.setValue(0)
+        setNoiseLevel(defaultFilters.noiseLevel)
+        setRadius(defaultFilters.radiusMeters ?? 500)
+        setSelectedUtilities(defaultFilters.utilities)
+        setWorkMode(profileSettings.workMode)
+        slideAnim.setValue(profileSettings.workMode === 'group' ? 1 : 0)
         resetFilters()
     }
 
@@ -92,7 +106,13 @@ export default function FilterPopup({ visible, onClose }) {
             </View>
             <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
                 <View>
-                  <Text style={styles.title}>Noise Level</Text>
+                  <View style={styles.titleRow}>
+                    <Text style={styles.title}>Noise Level</Text>
+                    <InfoTooltip
+                      title="Noise Level"
+                      message="Shows workplaces at or below the noise level you pick, from 1 (quietest) to 5 (loudest)."
+                    />
+                  </View>
                   <View style={styles.noiseRow}>
                       {NOISE_LEVELS.map((level) => (
                         <SelectionChip
@@ -106,7 +126,13 @@ export default function FilterPopup({ visible, onClose }) {
                 </View>
                 <View style={styles.radiusSection}>
                   <View style={styles.radiusTitleRow}>
-                    <Text style={[styles.title, styles.radiusTitleText]}>Radius</Text>
+                    <View style={styles.titleRow}>
+                      <Text style={[styles.title, styles.radiusTitleText]}>Radius</Text>
+                      <InfoTooltip
+                        title="Radius"
+                        message="Only shows workplaces within this distance from your current or searched location."
+                      />
+                    </View>
                     <Text style={styles.radiusValue}>{radius} m</Text>
                   </View>
                   <View style={styles.mapWrapper}>
@@ -143,7 +169,13 @@ export default function FilterPopup({ visible, onClose }) {
                   </Pressable>
                 </View>
                 <View style={styles.utilitiesSection}>
-                  <Text style={styles.title}>Utilities</Text>
+                  <View style={styles.titleRow}>
+                    <Text style={styles.title}>Utilities</Text>
+                    <InfoTooltip
+                      title="Utilities"
+                      message="Only shows workplaces that have all of the utilities you select here."
+                    />
+                  </View>
                   <View style={styles.utilitiesGrid}>
                     {UTILITIES.map((utility) => {
                       const selected = selectedUtilities.includes(utility)
@@ -222,6 +254,10 @@ title: {
   fontWeight: '600',
   paddingHorizontal: 16,
   marginBottom: 8,
+},
+titleRow: {
+  flexDirection: 'row',
+  alignItems: 'center',
 },
 utilitiesSection: {
   marginTop: 24,

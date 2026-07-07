@@ -1,11 +1,18 @@
 import Colors from '@/constants/Colors';
 import Typography from '@/constants/Typography';
+import { openDirections } from '@/utils/directions';
 import { Ionicons } from '@expo/vector-icons';
 import { Slot, router, useLocalSearchParams } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 export default function DetailLayout() {
   const { workplace } = useLocalSearchParams<{ workplace: string }>();
+  const parsedWorkplace = workplace ? JSON.parse(workplace) : null;
+
+  const handleGetDirections = () => {
+    if (!parsedWorkplace) return;
+    openDirections(parsedWorkplace.latitude, parsedWorkplace.longitude, parsedWorkplace.title);
+  };
 
   return (
     <View style={styles.container}>
@@ -14,7 +21,7 @@ export default function DetailLayout() {
       </View>
 
       <View style={styles.bottomBar}>
-        <Pressable style={styles.bottomBarButton} onPress={() => console.log('Route pressed!')}>
+        <Pressable style={styles.bottomBarButton} onPress={handleGetDirections}>
           <Ionicons name="navigate-outline" size={22} color={Colors.live} />
           <Text style={[styles.bottomBarLabel, { color: Colors.live }]}>Route</Text>
         </Pressable>

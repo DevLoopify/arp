@@ -10,11 +10,13 @@ import floatingButtonStyle from "@/constants/floatingButtonStyle";
 import Typography from "@/constants/Typography";
 import { getUtilityIcon } from "@/constants/utilityIcons";
 import workplaceMetaStyles from "@/constants/workplaceMetaStyles";
+import { useAuth } from "@/context/AuthContext";
+import { useWorkplaces } from "@/context/WorkplacesContext";
 import { getAvatarUri } from "@/utils/avatar";
 import { resolveImage } from "@/utils/resolveImage";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { router, useLocalSearchParams } from 'expo-router';
-import { Dimensions, Linking, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Dimensions, Linking, Pressable, ScrollView, Share, StyleSheet, Text, View } from "react-native";
 
 const screenWidth = Dimensions.get('window').width;
 const screenHeight = Dimensions.get('window').height;
@@ -33,10 +35,31 @@ export default function DetailScreen(){
     const { workplace } = useLocalSearchParams<{ workplace: string }>();
     const parsedWorkplace = JSON.parse(workplace);
     const { rating, noise, crowdedness, reviews, utilities } = parsedWorkplace;
+    const { user } = useAuth();
+    const { deleteReview } = useWorkplaces();
     const resolvedImages = parsedWorkplace.images.map(resolveImage).filter(Boolean);
-    const crowdLevel = crowdLevels[crowdedness];
+    const currentHour = new Date().getHours();
+    const liveCrowdedness = parsedWorkplace.crowdByHourToday?.[currentHour] ?? crowdedness;
+    const crowdLevel = crowdLevels[liveCrowdedness];
     const utilityRows = getUtilityRowsPerColumn(utilities?.length ?? 0);
     const utilitiesGridHeight = utilityRows * UTILITY_CHIP_HEIGHT + (utilityRows - 1) * UTILITY_CHIP_GAP;
+    const handleShare = () => {
+        const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${parsedWorkplace.latitude},${parsedWorkplace.longitude}`;
+        Share.share({
+            title: parsedWorkplace.title,
+            message: `${parsedWorkplace.title}\n${mapsUrl}`,
+        });
+    };
+    const handleEditReview = (review: { id: number }) => {
+        router.push({ pathname: '/(detail)/review', params: { workplace, review: JSON.stringify(review) } });
+    };
+    const handleDeleteReview = async (reviewId: number) => {
+        try {
+            await deleteReview(reviewId);
+        } catch (err) {
+            Alert.alert('Could not delete review', err instanceof Error ? err.message : 'Please try again.');
+        }
+    };
     return(
         <ScrollView contentContainerStyle={styles.scrollContent}>
             <View style={styles.imageContainer}>
@@ -47,7 +70,10 @@ export default function DetailScreen(){
                         clickHandler={() => router.back()}
                     />
                 </View>
-                <View style={styles.favouriteButtonPosition}>
+                <View style={styles.topRightActions}>
+                    <Pressable style={floatingButtonStyle.button} onPress={handleShare} hitSlop={8}>
+                        <Ionicons name="share-outline" size={20} color={Colors.textPrimary} />
+                    </Pressable>
                     <FavouriteButton workplaceId={parsedWorkplace.id} />
                 </View>
             </View>
@@ -95,7 +121,7 @@ export default function DetailScreen(){
                 <CrowdChart
                     average={parsedWorkplace.crowdByHourAverage}
                     today={parsedWorkplace.crowdByHourToday}
-                    currentHour={new Date().getHours()}
+                    currentHour={currentHour}
                 />
             </View>
             <View style={styles.section}>
@@ -105,7 +131,7 @@ export default function DetailScreen(){
                     showsHorizontalScrollIndicator={false}
                     contentContainerStyle={styles.reviewsRow}
                 >
-                    {reviews?.map((review: { id: number; author: string; rating: number; comment: string; date: string }) => (
+                    {reviews?.map((review: { id: number; userId?: number; author: string; rating: number; comment: string; date: string }) => (
                         <ReviewCard
                             key={review.id}
                             author={review.author}
@@ -113,6 +139,9 @@ export default function DetailScreen(){
                             comment={review.comment}
                             date={review.date}
                             avatarUri={getAvatarUri(review.id)}
+                            isOwner={user != null && review.userId === user.id}
+                            onEdit={() => handleEditReview(review)}
+                            onDelete={() => handleDeleteReview(review.id)}
                         />
                     ))}
                 </ScrollView>
@@ -159,10 +188,13 @@ const styles = StyleSheet.create({
         top: 48,
         left: 16,
     },
-    favouriteButtonPosition: {
+    topRightActions: {
         position: 'absolute',
         top: 48,
         right: 16,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
     },
     title: {
         ...Typography.body,

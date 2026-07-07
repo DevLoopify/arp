@@ -6,10 +6,12 @@ import Typography from '@/constants/Typography';
 import utilityIcons, { getUtilityIcon } from '@/constants/utilityIcons';
 import { useWorkplaces } from '@/context/WorkplacesContext';
 import useCurrentLocation from '@/hooks/useCurrentLocation';
+import { Workplace } from '@/utils/api';
+import { resolveImage } from '@/utils/resolveImage';
 import { clearWorkspaceDraft, getWorkspaceDraft, saveWorkspaceDraft } from '@/utils/workspaceDraft';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Alert, BackHandler, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import MapView, { MapPressEvent, Marker } from 'react-native-maps';
@@ -24,13 +26,24 @@ const FALLBACK_REGION = {
 };
 
 export default function CreateWorkspace() {
-    const [draft] = useState(() => getWorkspaceDraft());
-    const [name, setName] = useState(draft?.name ?? '');
-    const [description, setDescription] = useState(draft?.description ?? '');
-    const [selectedUtilities, setSelectedUtilities] = useState<string[]>(draft?.selectedUtilities ?? []);
-    const [photoUris, setPhotoUris] = useState<string[] | null>(draft?.photoUris.length ? draft.photoUris : null);
+    const params = useLocalSearchParams<{ workplace?: string }>();
+    const [editingWorkplace] = useState<Workplace | null>(() =>
+        params.workplace ? (JSON.parse(params.workplace) as Workplace) : null
+    );
+    const isEditMode = editingWorkplace != null;
+
+    const [draft] = useState(() => (isEditMode ? null : getWorkspaceDraft()));
+    const [name, setName] = useState(editingWorkplace?.title ?? draft?.name ?? '');
+    const [description, setDescription] = useState(editingWorkplace?.description ?? draft?.description ?? '');
+    const [selectedUtilities, setSelectedUtilities] = useState<string[]>(
+        editingWorkplace?.utilities ?? draft?.selectedUtilities ?? []
+    );
+    const [existingImages, setExistingImages] = useState<string[]>(editingWorkplace?.images ?? []);
+    const [newPhotoUris, setNewPhotoUris] = useState<string[]>(isEditMode ? [] : draft?.photoUris ?? []);
     const [markerCoordinate, setMarkerCoordinate] = useState<{ latitude: number; longitude: number } | null>(
-        draft?.markerCoordinate ?? null
+        editingWorkplace
+            ? { latitude: editingWorkplace.latitude, longitude: editingWorkplace.longitude }
+            : draft?.markerCoordinate ?? null
     );
     const [error, setError] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -39,7 +52,7 @@ export default function CreateWorkspace() {
         permissionGranted: boolean;
     };
     const mapRef = useRef<MapView>(null);
-    const { addWorkplace } = useWorkplaces();
+    const { addWorkplace, updateWorkplace } = useWorkplaces();
 
     const toggleUtility = (utility: string) => {
         setSelectedUtilities((prev) =>
@@ -59,23 +72,48 @@ export default function CreateWorkspace() {
 
         if (!result.canceled) {
             const newUris = result.assets.map((asset) => asset.uri);
-            setPhotoUris((prev) => [...(prev || []), ...newUris]);
+            setNewPhotoUris((prev) => [...prev, ...newUris]);
         }
+    };
+
+    const removeExistingImage = (url: string) => {
+        setExistingImages((prev) => prev.filter((u) => u !== url));
+    };
+
+    const removeNewPhoto = (uri: string) => {
+        setNewPhotoUris((prev) => prev.filter((u) => u !== uri));
     };
 
     const handleMapPress = (event: MapPressEvent) => {
         setMarkerCoordinate(event.nativeEvent.coordinate);
     };
 
-    const hasUnsavedChanges = Boolean(
-        name.trim() || description.trim() || selectedUtilities.length || photoUris?.length || markerCoordinate
-    );
+    const totalPhotoCount = existingImages.length + newPhotoUris.length;
+
+    const hasUnsavedChanges = editingWorkplace
+        ? name !== editingWorkplace.title ||
+          description !== editingWorkplace.description ||
+          JSON.stringify(selectedUtilities) !== JSON.stringify(editingWorkplace.utilities) ||
+          JSON.stringify(existingImages) !== JSON.stringify(editingWorkplace.images) ||
+          newPhotoUris.length > 0 ||
+          markerCoordinate?.latitude !== editingWorkplace.latitude ||
+          markerCoordinate?.longitude !== editingWorkplace.longitude
+        : Boolean(name.trim() || description.trim() || selectedUtilities.length || totalPhotoCount || markerCoordinate);
 
     const handleLeaveAttempt = () => {
         if (!hasUnsavedChanges) {
             router.back();
             return;
         }
+
+        if (isEditMode) {
+            Alert.alert('Discard changes?', 'You have unsaved changes. Do you want to discard them?', [
+                { text: 'Keep Editing', style: 'cancel' },
+                { text: 'Discard', style: 'destructive', onPress: () => router.back() },
+            ]);
+            return;
+        }
+
         Alert.alert(
             'Unsaved changes',
             'You have unsaved changes. Do you want to save them as a draft or discard them?',
@@ -96,7 +134,7 @@ export default function CreateWorkspace() {
                             name,
                             description,
                             selectedUtilities,
-                            photoUris: photoUris ?? [],
+                            photoUris: newPhotoUris,
                             markerCoordinate,
                         });
                         router.back();
@@ -112,25 +150,27 @@ export default function CreateWorkspace() {
             return true;
         });
         return () => subscription.remove();
-    }, [hasUnsavedChanges, name, description, selectedUtilities, photoUris, markerCoordinate]);
+    }, [hasUnsavedChanges, name, description, selectedUtilities, existingImages, newPhotoUris, markerCoordinate]);
 
-    const initialRegion = location
+    const initialRegion = markerCoordinate
+        ? { ...markerCoordinate, latitudeDelta: 0.02, longitudeDelta: 0.02 }
+        : location
         ? { ...location, latitudeDelta: 0.02, longitudeDelta: 0.02 }
         : FALLBACK_REGION;
 
     useEffect(() => {
-        if (!location) return;
+        if (isEditMode || !location) return;
         mapRef.current?.animateToRegion(
             { ...location, latitudeDelta: 0.02, longitudeDelta: 0.02 },
             300
         );
-    }, [location?.latitude, location?.longitude]);
+    }, [isEditMode, location?.latitude, location?.longitude]);
 
-    const handleAdd = async () => {
+    const handleSubmit = async () => {
         const missing: string[] = [];
         if (!name.trim()) missing.push('a title');
         if (!description.trim()) missing.push('a description');
-        if (!photoUris?.length) missing.push('at least one photo');
+        if (totalPhotoCount === 0) missing.push('at least one photo');
         if (!markerCoordinate) missing.push('a location');
 
         if (missing.length > 0) {
@@ -140,17 +180,28 @@ export default function CreateWorkspace() {
         setError(null);
         setIsSubmitting(true);
         try {
-            await addWorkplace({
-                name,
-                description,
-                utilities: selectedUtilities,
-                location: markerCoordinate!,
-                photoUris: photoUris ?? [],
-            });
-            clearWorkspaceDraft();
+            if (editingWorkplace) {
+                await updateWorkplace(editingWorkplace.id, {
+                    name,
+                    description,
+                    utilities: selectedUtilities,
+                    location: markerCoordinate!,
+                    existingImages,
+                    newPhotoUris,
+                });
+            } else {
+                await addWorkplace({
+                    name,
+                    description,
+                    utilities: selectedUtilities,
+                    location: markerCoordinate!,
+                    photoUris: newPhotoUris,
+                });
+                clearWorkspaceDraft();
+            }
             router.back();
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Could not create the workplace.');
+            setError(err instanceof Error ? err.message : 'Could not save the workplace.');
         } finally {
             setIsSubmitting(false);
         }
@@ -162,7 +213,7 @@ export default function CreateWorkspace() {
                 <Pressable style={styles.backButton} onPress={handleLeaveAttempt}>
                     <Ionicons name="arrow-back" size={24} color={Colors.textPrimary} />
                 </Pressable>
-                <Text style={styles.headerTitle}>Create Workspace</Text>
+                <Text style={styles.headerTitle}>{isEditMode ? 'Edit Workspace' : 'Create Workspace'}</Text>
             </View>
 
             <ScrollView>
@@ -196,10 +247,23 @@ export default function CreateWorkspace() {
                         ))}
                     </View>
 
-                    {photoUris?.length ? (
+                    {totalPhotoCount > 0 ? (
                         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.photoRow}>
-                            {photoUris.map((uri) => (
-                                <Image key={uri} source={{ uri }} style={styles.photoThumbnail} />
+                            {existingImages.map((url) => (
+                                <View key={url} style={styles.photoThumbnailWrapper}>
+                                    <Image source={resolveImage(url)} style={styles.photoThumbnail} />
+                                    <Pressable style={styles.removePhotoButton} onPress={() => removeExistingImage(url)}>
+                                        <Ionicons name="close" size={14} color={Colors.textWhite} />
+                                    </Pressable>
+                                </View>
+                            ))}
+                            {newPhotoUris.map((uri) => (
+                                <View key={uri} style={styles.photoThumbnailWrapper}>
+                                    <Image source={{ uri }} style={styles.photoThumbnail} />
+                                    <Pressable style={styles.removePhotoButton} onPress={() => removeNewPhoto(uri)}>
+                                        <Ionicons name="close" size={14} color={Colors.textWhite} />
+                                    </Pressable>
+                                </View>
                             ))}
                             <Pressable style={styles.addMorePhoto} onPress={pickPhoto}>
                                 <Ionicons name="add" size={28} color={Colors.textMuted} />
@@ -235,7 +299,10 @@ export default function CreateWorkspace() {
                         <Text style={styles.cancelButtonText}>Cancel</Text>
                     </Pressable>
                     <View style={styles.addButton}>
-                        <PrimaryButton label={isSubmitting ? 'Adding...' : 'Add'} onPress={handleAdd} />
+                        <PrimaryButton
+                            label={isSubmitting ? (isEditMode ? 'Saving...' : 'Adding...') : isEditMode ? 'Save' : 'Add'}
+                            onPress={handleSubmit}
+                        />
                     </View>
                 </View>
             </View>
@@ -301,10 +368,24 @@ const styles = StyleSheet.create({
         gap: 10,
         marginBottom: 20,
     },
+    photoThumbnailWrapper: {
+        position: 'relative',
+    },
     photoThumbnail: {
         width: 120,
         height: 120,
         borderRadius: 12,
+    },
+    removePhotoButton: {
+        position: 'absolute',
+        top: 6,
+        right: 6,
+        width: 22,
+        height: 22,
+        borderRadius: 11,
+        backgroundColor: 'rgba(0,0,0,0.6)',
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     addMorePhoto: {
         width: 120,

@@ -24,7 +24,7 @@ export default function RegisterScreen() {
         setIsSubmitting(true);
         try {
             await register(name, email, password);
-            router.replace('/(tabs)/explore');
+            router.replace('/setup_preferences');
         } catch (err) {
             const message = err instanceof ApiError ? err.message : 'Could not reach the server.';
             Alert.alert('Registration failed', message);

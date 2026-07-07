@@ -11,15 +11,15 @@ export default function RootLayout() {
     <AuthProvider>
       <WorkplacesProvider>
         <FavouritesProvider>
-          <FiltersProvider>
-            <SearchLocationProvider>
-              <UserProfileProvider>
+          <UserProfileProvider>
+            <FiltersProvider>
+              <SearchLocationProvider>
                 <Stack screenOptions={{ headerShown: false }}
                 initialRouteName="login">
                 </Stack>
-              </UserProfileProvider>
-            </SearchLocationProvider>
-          </FiltersProvider>
+              </SearchLocationProvider>
+            </FiltersProvider>
+          </UserProfileProvider>
         </FavouritesProvider>
       </WorkplacesProvider>
     </AuthProvider>

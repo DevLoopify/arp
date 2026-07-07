@@ -127,6 +127,92 @@ func (s *Server) CreateWorkplace(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, wp)
 }
 
+func (s *Server) UpdateWorkplace(w http.ResponseWriter, r *http.Request) {
+	userID, _ := auth.UserIDFromContext(r.Context())
+
+	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid workplace id")
+		return
+	}
+
+	var req createWorkplaceRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	if req.Title == "" {
+		writeError(w, http.StatusBadRequest, "title is required")
+		return
+	}
+	if req.Utilities == nil {
+		req.Utilities = []string{}
+	}
+	if req.Images == nil {
+		req.Images = []string{}
+	}
+
+	var ownerID *int
+	if err := s.DB.QueryRow(r.Context(), `SELECT owner_user_id FROM workplaces WHERE id = $1`, id).Scan(&ownerID); err != nil {
+		writeError(w, http.StatusNotFound, "workplace not found")
+		return
+	}
+	if ownerID == nil || *ownerID != userID {
+		writeError(w, http.StatusForbidden, "you can only edit workplaces you added")
+		return
+	}
+
+	row := s.DB.QueryRow(r.Context(), `
+		UPDATE workplaces
+		SET title = $1, description = $2, latitude = $3, longitude = $4, utilities = $5, images = $6
+		WHERE id = $7
+		RETURNING id, title, description, latitude, longitude, utilities, noise, images,
+		          crowdedness, crowd_by_hour_average, crowd_by_hour_today, phone_number, email, owner_user_id`,
+		req.Title, req.Description, req.Latitude, req.Longitude, req.Utilities, req.Images, id,
+	)
+
+	wp, err := scanWorkplace(row)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "could not update workplace")
+		return
+	}
+
+	workplaces := []models.Workplace{wp}
+	if err := attachReviews(r.Context(), s.DB, workplaces); err != nil {
+		writeError(w, http.StatusInternalServerError, "could not load reviews")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, workplaces[0])
+}
+
+func (s *Server) DeleteWorkplace(w http.ResponseWriter, r *http.Request) {
+	userID, _ := auth.UserIDFromContext(r.Context())
+
+	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid workplace id")
+		return
+	}
+
+	var ownerID *int
+	if err := s.DB.QueryRow(r.Context(), `SELECT owner_user_id FROM workplaces WHERE id = $1`, id).Scan(&ownerID); err != nil {
+		writeError(w, http.StatusNotFound, "workplace not found")
+		return
+	}
+	if ownerID == nil || *ownerID != userID {
+		writeError(w, http.StatusForbidden, "you can only delete workplaces you added")
+		return
+	}
+
+	if _, err := s.DB.Exec(r.Context(), `DELETE FROM workplaces WHERE id = $1`, id); err != nil {
+		writeError(w, http.StatusInternalServerError, "could not delete workplace")
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
 type rowScanner interface {
 	Scan(dest ...any) error
 }
@@ -157,7 +243,7 @@ func attachReviews(ctx context.Context, db pgxQuerier, workplaces []models.Workp
 	}
 
 	rows, err := db.Query(ctx, `
-		SELECT id, workplace_id, author, rating, comment, to_char(created_at, 'YYYY-MM-DD')
+		SELECT id, workplace_id, user_id, author, rating, comment, to_char(created_at, 'YYYY-MM-DD')
 		FROM reviews
 		WHERE workplace_id = ANY($1)
 		ORDER BY created_at`, ids)
@@ -172,7 +258,7 @@ func attachReviews(ctx context.Context, db pgxQuerier, workplaces []models.Workp
 	for rows.Next() {
 		var review models.Review
 		var workplaceID int
-		if err := rows.Scan(&review.ID, &workplaceID, &review.Author, &review.Rating, &review.Comment, &review.Date); err != nil {
+		if err := rows.Scan(&review.ID, &workplaceID, &review.UserID, &review.Author, &review.Rating, &review.Comment, &review.Date); err != nil {
 			return err
 		}
 		if wp, ok := byID[workplaceID]; ok {

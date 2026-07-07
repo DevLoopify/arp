@@ -1,11 +1,33 @@
 import Colors from '@/constants/Colors';
 import Typography from '@/constants/Typography';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { Alert, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
-export default function ReviewCard({ author, rating, comment, date, avatarUri }) {
+export default function ReviewCard({ author, rating, comment, date, avatarUri, isOwner = false, onEdit, onDelete }) {
+    const handlePencilPress = () => {
+        Alert.alert('Your review', 'What would you like to do?', [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Edit', onPress: onEdit },
+            {
+                text: 'Delete',
+                style: 'destructive',
+                onPress: () => {
+                    Alert.alert('Delete review?', 'This cannot be undone.', [
+                        { text: 'Cancel', style: 'cancel' },
+                        { text: 'Delete', style: 'destructive', onPress: onDelete },
+                    ]);
+                },
+            },
+        ]);
+    };
+
     return (
         <View style={styles.card}>
+            {isOwner && (
+                <Pressable style={styles.editButton} onPress={handlePencilPress} hitSlop={8}>
+                    <Ionicons name="pencil" size={14} color={Colors.textMuted} />
+                </Pressable>
+            )}
             <View style={styles.header}>
                 <View style={styles.avatarColumn}>
                     <Image source={{ uri: avatarUri }} style={styles.avatar} />
@@ -42,6 +64,12 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.08,
         shadowRadius: 6,
         elevation: 2,
+    },
+    editButton: {
+        position: 'absolute',
+        top: 8,
+        right: 8,
+        zIndex: 1,
     },
     header: {
         flexDirection: 'row',

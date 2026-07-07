@@ -3,24 +3,28 @@ import StarRating from '@/components/StarRating';
 import Colors from '@/constants/Colors';
 import Typography from '@/constants/Typography';
 import { useWorkplaces } from '@/context/WorkplacesContext';
-import { api } from '@/utils/api';
+import { api, Review } from '@/utils/api';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useRef, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 export default function ReviewScreen() {
-  const { workplace } = useLocalSearchParams<{ workplace: string }>();
+  const { workplace, review } = useLocalSearchParams<{ workplace: string; review?: string }>();
   const parsedWorkplace = workplace ? JSON.parse(workplace) : null;
-  const [rating, setRating] = useState(4);
-  const [comment, setComment] = useState('');
+  const [editingReview] = useState<Review | null>(() => (review ? (JSON.parse(review) as Review) : null));
+  const isEditMode = editingReview != null;
+
+  const [rating, setRating] = useState(editingReview?.rating ?? 4);
+  const [comment, setComment] = useState(editingReview?.comment ?? '');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const allowRemove = useRef(false);
-  const defaultRating = 4;
-  const { addReview } = useWorkplaces();
+  const { addReview, updateReview } = useWorkplaces();
 
-  const hasUnsavedChanges = rating !== defaultRating || comment.trim().length > 0;
+  const hasUnsavedChanges = isEditMode
+    ? rating !== editingReview.rating || comment !== editingReview.comment
+    : rating !== 4 || comment.trim().length > 0;
 
 
   const handleSubmit = async () => {
@@ -38,11 +42,18 @@ export default function ReviewScreen() {
     allowRemove.current = true;
     setIsSubmitting(true);
     try {
-      await addReview(parsedWorkplace.id, { rating, comment });
+      if (isEditMode) {
+        await updateReview(editingReview.id, { rating, comment });
+      } else {
+        await addReview(parsedWorkplace.id, { rating, comment });
+      }
       const updatedWorkplace = await api.workplaces.get(parsedWorkplace.id);
       router.replace({ pathname: '/(detail)/detail', params: { workplace: JSON.stringify(updatedWorkplace) } });
     } catch (err) {
-      Alert.alert('Could not submit review', err instanceof Error ? err.message : 'Please try again.');
+      Alert.alert(
+        isEditMode ? 'Could not update review' : 'Could not submit review',
+        err instanceof Error ? err.message : 'Please try again.'
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -51,6 +62,14 @@ export default function ReviewScreen() {
   const handleBackPress = () => {
     if (!hasUnsavedChanges) {
       router.back();
+      return;
+    }
+
+    if (isEditMode) {
+      Alert.alert('Discard changes?', 'You have unsaved changes. Do you want to discard them?', [
+        { text: 'Keep Editing', style: 'cancel' },
+        { text: 'Discard', style: 'destructive', onPress: () => router.back() },
+      ]);
       return;
     }
 
@@ -94,7 +113,7 @@ export default function ReviewScreen() {
         <Pressable style={styles.backButton} onPress={handleBackPress}>
           <Ionicons name="arrow-back" size={24} color={Colors.textPrimary} />
         </Pressable>
-        <Text style={styles.headerTitle}>Add Review</Text>
+        <Text style={styles.headerTitle}>{isEditMode ? 'Edit Review' : 'Add Review'}</Text>
       </View>
 
       {parsedWorkplace ? (
@@ -115,7 +134,10 @@ export default function ReviewScreen() {
 
           {error && <Text style={styles.errorText}>{error}</Text>}
 
-          <PrimaryButton label={isSubmitting ? 'Submitting...' : 'Submit Review'} onPress={handleSubmit} />
+          <PrimaryButton
+            label={isSubmitting ? 'Submitting...' : isEditMode ? 'Save Changes' : 'Submit Review'}
+            onPress={handleSubmit}
+          />
         </ScrollView>
       ) : (
         <View style={styles.emptyState}>

@@ -1,13 +1,16 @@
 import Colors from '@/constants/Colors';
 import Typography from '@/constants/Typography';
 import utilityIcons, { getUtilityIcon } from '@/constants/utilityIcons';
+import { useAuth } from '@/context/AuthContext';
 import { DistanceUnit, Language, NoiseLevel, useUserProfile, WorkMode } from '@/context/UserProfileContext';
+import { useWorkplaces } from '@/context/WorkplacesContext';
+import { Review, Workplace } from '@/utils/api';
 import { Ionicons } from '@expo/vector-icons';
 import Slider from '@react-native-community/slider';
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Animated, Image, LayoutAnimation, Platform, Pressable, ScrollView, StyleSheet, Text, UIManager, View,} from 'react-native';
+import { Alert, Animated, Image, LayoutAnimation, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, UIManager, View,} from 'react-native';
 import InputField from '@/components/InputField';
 import SelectionChip from '@/components/SelectionChip';
 
@@ -30,17 +33,21 @@ const LANGUAGE_OPTIONS = [
     { value: 'de', label: 'Deutsch' },
 ];
 
+const NOISE_LEVELS: NoiseLevel[] = [1, 2, 3, 4, 5];
+
 const DEFAULT_AVATAR =
     'https://static.vecteezy.com/ti/fotos-kostenlos/p2/55121385-capybara-steht-bewachen-uber-es-ist-jung-im-ein-heiter-naturlich-lebensraum-wahrend-tageslicht-std-im-das-wild-prasentieren-das-bindung-zwischen-mutter-und-baby-foto.jpeg';
 
 export default function ProfileScreen() {
     const { settings, isLoaded, saveSettings } = useUserProfile();
+    const { user } = useAuth();
+    const { workplaces, deleteWorkplace, deleteReview } = useWorkplaces();
 
     const [avatarUri, setAvatarUri] = useState<string | null>(null);
     const [name, setName] = useState('');
 
     const [preferencesExpanded, setPreferencesExpanded] = useState(false);
-    const [noiseLevel, setNoiseLevel] = useState<NoiseLevel>('average');
+    const [noiseLevel, setNoiseLevel] = useState<NoiseLevel>(3);
     const [radius, setRadius] = useState(500);
     const [workMode, setWorkMode] = useState<WorkMode>('solo');
     const [selectedUtilities, setSelectedUtilities] = useState<string[]>([]);
@@ -113,22 +120,87 @@ export default function ProfileScreen() {
         router.replace('/login');
     };
 
-    const handleSave = async () => {
-        await saveSettings({
-            name,
-            avatarUri,
-            noiseLevel,
-            radius,
-            workMode,
-            utilities: selectedUtilities,
-            unit,
-            language,
+    const myWorkplaces = workplaces.filter((wp) => user != null && wp.ownerUserId === user.id);
+    const myReviews = workplaces.flatMap((wp) =>
+        (wp.reviews ?? [])
+            .filter((review) => user != null && review.userId === user.id)
+            .map((review) => ({ ...review, workplace: wp }))
+    );
+
+    const handleViewWorkplace = (wp: Workplace) => {
+        router.push({ pathname: '/(detail)/detail', params: { workplace: JSON.stringify(wp) } });
+    };
+
+    const handleEditWorkplace = (wp: Workplace) => {
+        router.push({ pathname: '/create_workspace', params: { workplace: JSON.stringify(wp) } });
+    };
+
+    const handleDeleteWorkplace = (wp: Workplace) => {
+        Alert.alert(
+            'Delete workplace?',
+            `This will permanently delete "${wp.title}" and its reviews. This cannot be undone.`,
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Delete',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            await deleteWorkplace(wp.id);
+                        } catch (err) {
+                            Alert.alert('Could not delete workplace', err instanceof Error ? err.message : 'Please try again.');
+                        }
+                    },
+                },
+            ]
+        );
+    };
+
+    const handleEditReview = (wp: Workplace, review: Review) => {
+        router.push({
+            pathname: '/(detail)/review',
+            params: { workplace: JSON.stringify(wp), review: JSON.stringify(review) },
         });
-        setShowSavedToast(true);
-        setTimeout(() => setShowSavedToast(false), 1200);
+    };
+
+    const handleDeleteReview = (review: Review) => {
+        Alert.alert('Delete review?', 'This cannot be undone.', [
+            { text: 'Cancel', style: 'cancel' },
+            {
+                text: 'Delete',
+                style: 'destructive',
+                onPress: async () => {
+                    try {
+                        await deleteReview(review.id);
+                    } catch (err) {
+                        Alert.alert('Could not delete review', err instanceof Error ? err.message : 'Please try again.');
+                    }
+                },
+            },
+        ]);
+    };
+
+    const handleSave = async () => {
+        try {
+            await saveSettings({
+                name,
+                avatarUri,
+                noiseLevel,
+                radius,
+                workMode,
+                utilities: selectedUtilities,
+                unit,
+                language,
+            });
+            setShowSavedToast(true);
+            setTimeout(() => setShowSavedToast(false), 1200);
+        } catch (err) {
+            Alert.alert('Could not save profile', err instanceof Error ? err.message : 'Please try again.');
+        }
     };
 
     return (
+        <>
         <ScrollView style={styles.container} contentContainerStyle={styles.content}>
             <Pressable style={styles.avatarWrapper} onPress={pickAvatar}>
                 <Image source={{ uri: avatarUri ?? DEFAULT_AVATAR }} style={styles.avatar} />
@@ -161,36 +233,15 @@ export default function ProfileScreen() {
                     <View style={styles.sectionBody}>
                         <Text style={styles.fieldLabel}>Noise Level</Text>
                         <View style={styles.noiseRow}>
-                            <Pressable
-                                onPress={() => setNoiseLevel('quiet')}
-                                style={[
-                                    styles.noiseBox,
-                                    styles.quietBox,
-                                    noiseLevel === 'quiet' && styles.quietBoxSelected,
-                                ]}
-                            >
-                                <Text style={noiseLevel === 'quiet' && styles.noiseTextSelected}>Quiet</Text>
-                            </Pressable>
-                            <Pressable
-                                onPress={() => setNoiseLevel('average')}
-                                style={[
-                                    styles.noiseBox,
-                                    styles.averageBox,
-                                    noiseLevel === 'average' && styles.averageBoxSelected,
-                                ]}
-                            >
-                                <Text style={noiseLevel === 'average' && styles.noiseTextSelected}>Average</Text>
-                            </Pressable>
-                            <Pressable
-                                onPress={() => setNoiseLevel('noisy')}
-                                style={[
-                                    styles.noiseBox,
-                                    styles.noisyBox,
-                                    noiseLevel === 'noisy' && styles.noisyBoxSelected,
-                                ]}
-                            >
-                                <Text style={noiseLevel === 'noisy' && styles.noiseTextSelected}>Noisy</Text>
-                            </Pressable>
+                            {NOISE_LEVELS.map((level) => (
+                                <SelectionChip
+                                    key={level}
+                                    text={String(level)}
+                                    icon={undefined}
+                                    selected={noiseLevel === level}
+                                    onPress={() => setNoiseLevel(level)}
+                                />
+                            ))}
                         </View>
 
                         <View style={styles.radiusHeader}>
@@ -267,6 +318,77 @@ export default function ProfileScreen() {
                 </View>
             </View>
 
+            <View style={styles.section}>
+                <Text style={styles.sectionTitle}>My Workplaces</Text>
+                <View style={styles.sectionBody}>
+                    {myWorkplaces.length === 0 ? (
+                        <Text style={styles.emptyListText}>You haven&apos;t added any workplaces yet.</Text>
+                    ) : (
+                        myWorkplaces.map((wp) => (
+                            <Pressable key={wp.id} style={styles.listRow} onPress={() => handleViewWorkplace(wp)}>
+                                <Text style={styles.listRowTitle} numberOfLines={1}>{wp.title}</Text>
+                                <View style={styles.listRowActions}>
+                                    <Pressable style={styles.listRowIcon} onPress={() => handleEditWorkplace(wp)} hitSlop={8}>
+                                        <Ionicons name="pencil" size={18} color={Colors.primary} />
+                                    </Pressable>
+                                    <Pressable style={styles.listRowIcon} onPress={() => handleDeleteWorkplace(wp)} hitSlop={8}>
+                                        <Ionicons name="trash-outline" size={18} color={Colors.live} />
+                                    </Pressable>
+                                </View>
+                            </Pressable>
+                        ))
+                    )}
+                </View>
+            </View>
+
+            <View style={styles.section}>
+                <Text style={styles.sectionTitle}>My Reviews</Text>
+                <View style={styles.sectionBody}>
+                    {myReviews.length === 0 ? (
+                        <Text style={styles.emptyListText}>You haven&apos;t written any reviews yet.</Text>
+                    ) : (
+                        myReviews.map((review) => (
+                            <Pressable
+                                key={review.id}
+                                style={styles.listRow}
+                                onPress={() => handleViewWorkplace(review.workplace)}
+                            >
+                                <View style={styles.reviewRowContent}>
+                                    <Text style={styles.listRowTitle} numberOfLines={1}>{review.workplace.title}</Text>
+                                    <View style={styles.reviewStars}>
+                                        {[1, 2, 3, 4, 5].map((star) => (
+                                            <Ionicons
+                                                key={star}
+                                                name={star <= review.rating ? 'star' : 'star-outline'}
+                                                size={12}
+                                                color="#FFD700"
+                                            />
+                                        ))}
+                                    </View>
+                                    <Text style={styles.reviewComment} numberOfLines={2}>{review.comment}</Text>
+                                </View>
+                                <View style={styles.listRowActions}>
+                                    <Pressable
+                                        style={styles.listRowIcon}
+                                        onPress={() => handleEditReview(review.workplace, review)}
+                                        hitSlop={8}
+                                    >
+                                        <Ionicons name="pencil" size={18} color={Colors.primary} />
+                                    </Pressable>
+                                    <Pressable
+                                        style={styles.listRowIcon}
+                                        onPress={() => handleDeleteReview(review)}
+                                        hitSlop={8}
+                                    >
+                                        <Ionicons name="trash-outline" size={18} color={Colors.live} />
+                                    </Pressable>
+                                </View>
+                            </Pressable>
+                        ))
+                    )}
+                </View>
+            </View>
+
             <Pressable style={styles.saveButton} onPress={handleSave}>
                 <Text style={styles.saveButtonText}>Save</Text>
             </Pressable>
@@ -275,14 +397,17 @@ export default function ProfileScreen() {
                 <Ionicons name="log-out-outline" size={18} color={Colors.live} />
                 <Text style={styles.logoutText}>Log Out</Text>
             </Pressable>
+        </ScrollView>
 
-            {showSavedToast && (
-                <View style={styles.toast} pointerEvents="none">
+        <Modal visible={showSavedToast} transparent animationType="fade">
+            <View style={styles.toastOverlay} pointerEvents="none">
+                <View style={styles.toast}>
                     <Ionicons name="checkmark-circle" size={18} color="#2E7D32" />
                     <Text style={styles.toastText}>Profile saved</Text>
                 </View>
-            )}
-        </ScrollView>
+            </View>
+        </Modal>
+        </>
     );
 }
 
@@ -400,40 +525,8 @@ const styles = StyleSheet.create({
     },
     noiseRow: {
         flexDirection: 'row',
+        flexWrap: 'wrap',
         gap: 8,
-    },
-    noiseBox: {
-        flex: 1,
-        paddingVertical: 12,
-        alignItems: 'center',
-        borderRadius: 8,
-        borderWidth: 2,
-        borderColor: 'transparent',
-    },
-    quietBox: {
-        backgroundColor: '#DFF5E1',
-    },
-    quietBoxSelected: {
-        backgroundColor: '#4CAF50',
-        borderColor: '#2E7D32',
-    },
-    averageBox: {
-        backgroundColor: '#FFF3CD',
-    },
-    averageBoxSelected: {
-        backgroundColor: '#FFC107',
-        borderColor: '#B28704',
-    },
-    noisyBox: {
-        backgroundColor: '#FDE0E0',
-    },
-    noisyBoxSelected: {
-        backgroundColor: '#F44336',
-        borderColor: '#B71C1C',
-    },
-    noiseTextSelected: {
-        color: 'white',
-        fontWeight: '700',
     },
     toggleButton: {
         height: TOGGLE_HEIGHT,
@@ -485,6 +578,45 @@ const styles = StyleSheet.create({
     optionPillTextSelected: {
         color: Colors.textWhite,
     },
+    emptyListText: {
+        ...Typography.caption,
+        color: Colors.textMuted,
+        paddingVertical: 12,
+    },
+    listRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 12,
+        paddingVertical: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: '#f0f0f0',
+    },
+    listRowTitle: {
+        ...Typography.body,
+        fontWeight: '600',
+        color: Colors.textPrimary,
+        flex: 1,
+    },
+    listRowActions: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 16,
+    },
+    listRowIcon: {
+        padding: 2,
+    },
+    reviewRowContent: {
+        flex: 1,
+        gap: 4,
+    },
+    reviewStars: {
+        flexDirection: 'row',
+    },
+    reviewComment: {
+        ...Typography.caption,
+        color: Colors.textSecondary,
+    },
     saveButton: {
         alignItems: 'center',
         justifyContent: 'center',
@@ -516,10 +648,12 @@ const styles = StyleSheet.create({
         ...Typography.button,
         color: Colors.live,
     },
+    toastOverlay: {
+        flex: 1,
+        alignItems: 'center',
+        paddingTop: 60,
+    },
     toast: {
-        position: 'absolute',
-        top: 12,
-        alignSelf: 'center',
         flexDirection: 'row',
         alignItems: 'center',
         gap: 6,

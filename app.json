@@ -8,11 +8,19 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.loopify.arp",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ]
     },
     "web": {
       "output": "static"
@@ -32,7 +40,12 @@
       "reactCompiler": true
     },
     "extra": {
-      "apiUrl": "https://arp.syntraq.de/api"
-    }
+      "apiUrl": "https://arp.syntraq.de/api",
+      "router": {},
+      "eas": {
+        "projectId": "a246bd3f-b14c-4a29-a26a-def2a3616db8"
+      }
+    },
+    "owner": "loopify"
   }
 }

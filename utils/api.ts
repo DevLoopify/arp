@@ -41,9 +41,39 @@ export function resolveApiUrl(path: string): string {
     return `${API_URL.replace(/\/api\/?$/, '')}${path}`;
 }
 
-export type User = { id: number; name: string; email: string; createdAt: string };
+export type User = {
+    id: number;
+    name: string;
+    email: string;
+    avatarUrl: string;
+    noiseLevel: number;
+    radius: number;
+    workMode: string;
+    utilities: string[];
+    unit: string;
+    language: string;
+    createdAt: string;
+};
+export type ProfileUpdatePayload = {
+    name: string;
+    avatarUrl: string;
+    noiseLevel: number;
+    radius: number;
+    workMode: string;
+    utilities: string[];
+    unit: string;
+    language: string;
+};
 export type AuthResponse = { token: string; user: User };
-export type Review = { id: number; author: string; rating: number; comment: string; date: string };
+export type Review = { id: number; userId?: number; author: string; rating: number; comment: string; date: string };
+export type WorkplacePayload = {
+    title: string;
+    description: string;
+    latitude: number;
+    longitude: number;
+    utilities: string[];
+    images: string[];
+};
 export type Workplace = {
     id: number;
     title: string;
@@ -70,18 +100,24 @@ export const api = {
         login: (email: string, password: string) =>
             request<AuthResponse>('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }),
         me: (token: string) => request<User>('/auth/me', { token }),
+        updateProfile: (token: string, payload: ProfileUpdatePayload) =>
+            request<User>('/auth/me', { method: 'PUT', token, body: JSON.stringify(payload) }),
     },
     workplaces: {
         list: () => request<Workplace[]>('/workplaces'),
         get: (id: number) => request<Workplace>(`/workplaces/${id}`),
-        create: (
-            token: string,
-            payload: { title: string; description: string; latitude: number; longitude: number; utilities: string[]; images: string[] }
-        ) => request<Workplace>('/workplaces', { method: 'POST', token, body: JSON.stringify(payload) }),
+        create: (token: string, payload: WorkplacePayload) =>
+            request<Workplace>('/workplaces', { method: 'POST', token, body: JSON.stringify(payload) }),
+        update: (token: string, id: number, payload: WorkplacePayload) =>
+            request<Workplace>(`/workplaces/${id}`, { method: 'PUT', token, body: JSON.stringify(payload) }),
+        remove: (token: string, id: number) => request<void>(`/workplaces/${id}`, { method: 'DELETE', token }),
     },
     reviews: {
         create: (token: string, workplaceId: number, payload: { rating: number; comment: string }) =>
             request<Review>(`/workplaces/${workplaceId}/reviews`, { method: 'POST', token, body: JSON.stringify(payload) }),
+        update: (token: string, reviewId: number, payload: { rating: number; comment: string }) =>
+            request<Review>(`/reviews/${reviewId}`, { method: 'PUT', token, body: JSON.stringify(payload) }),
+        remove: (token: string, reviewId: number) => request<void>(`/reviews/${reviewId}`, { method: 'DELETE', token }),
     },
     favourites: {
         list: (token: string) => request<number[]>('/favourites', { token }),
