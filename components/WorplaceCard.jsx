@@ -10,15 +10,15 @@ import { formatDistance, getDistanceKm } from '@/utils/geo';
 import { resolveImage } from '@/utils/resolveImage';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Link, router } from 'expo-router';
-import { Alert, Dimensions, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import FavouriteButton from './FavouriteButton';
 import ImageCarousel from './ImageCarousel';
 import SelectionChip from './SelectionChip';
 
-const screenWidth = Dimensions.get('window').width;
 const MAX_VISIBLE_UTILITIES = 3;
 
-export default function WorkplaceCard({ workplace, width = screenWidth - 32, userLocation = null, highlighted = false }) {
+export default function WorkplaceCard({ workplace, userLocation = null, highlighted = false }) {
     const { title, description, images, rating, noise, crowdedness, crowdByHourToday, utilities, latitude, longitude } = workplace;
     const { user } = useAuth();
     const { deleteWorkplace } = useWorkplaces();
@@ -31,6 +31,8 @@ export default function WorkplaceCard({ workplace, width = screenWidth - 32, use
         : null;
     const visibleUtilities = utilities?.slice(0, MAX_VISIBLE_UTILITIES) ?? [];
     const hiddenUtilityCount = (utilities?.length ?? 0) - visibleUtilities.length;
+
+    const [cardWidth, setCardWidth] = useState(0);
 
     const handleEditPress = () => {
         Alert.alert(title, 'What would you like to do?', [
@@ -75,21 +77,21 @@ export default function WorkplaceCard({ workplace, width = screenWidth - 32, use
             asChild
         >
             <Pressable
+                onLayout={(e) => setCardWidth(e.nativeEvent.layout.width)}
                 style={({ pressed }) => [
                     styles.card,
-                    { width },
                     highlighted && styles.cardHighlighted,
                     pressed && styles.cardPressed,
                 ]}
             >
                 <View>
-                    {resolvedImages.length > 0 ? (
-                        <ImageCarousel images={resolvedImages} width={width} />
+                    {cardWidth > 0 && (resolvedImages.length > 0 ? (
+                        <ImageCarousel images={resolvedImages} width={cardWidth} />
                     ) : (
-                        <View style={[styles.imagePlaceholder, { width }]}>
+                        <View style={[styles.imagePlaceholder, { width: cardWidth }]}>
                             <Ionicons name="image-outline" size={32} color={Colors.textMuted} />
                         </View>
-                    )}
+                    ))}
                     <View style={styles.favouriteButtonPosition}>
                         <FavouriteButton workplaceId={workplace.id} />
                     </View>

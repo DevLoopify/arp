@@ -33,7 +33,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Colors.backgroundWarm,
+    backgroundColor: Colors.backgroundBase,
     padding: 24,
   },
   title: {

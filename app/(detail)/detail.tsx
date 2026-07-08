@@ -21,16 +21,6 @@ import { Alert, Dimensions, Linking, Pressable, ScrollView, Share, StyleSheet, T
 const screenWidth = Dimensions.get('window').width;
 const screenHeight = Dimensions.get('window').height;
 
-// SelectionChip renders at 38px tall plus its own 5px margin on each side.
-const UTILITY_CHIP_HEIGHT = 48;
-const UTILITY_CHIP_GAP = 10;
-
-function getUtilityRowsPerColumn(count: number) {
-    if (count <= 6) return 3;
-    if (count <= 8) return 4;
-    return 5;
-}
-
 export default function DetailScreen(){
     const { workplace } = useLocalSearchParams<{ workplace: string }>();
     const parsedWorkplace = JSON.parse(workplace);
@@ -41,8 +31,6 @@ export default function DetailScreen(){
     const currentHour = new Date().getHours();
     const liveCrowdedness = parsedWorkplace.crowdByHourToday?.[currentHour] ?? crowdedness;
     const crowdLevel = crowdLevels[liveCrowdedness];
-    const utilityRows = getUtilityRowsPerColumn(utilities?.length ?? 0);
-    const utilitiesGridHeight = utilityRows * UTILITY_CHIP_HEIGHT + (utilityRows - 1) * UTILITY_CHIP_GAP;
     const handleShare = () => {
         const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${parsedWorkplace.latitude},${parsedWorkplace.longitude}`;
         Share.share({
@@ -61,7 +49,7 @@ export default function DetailScreen(){
         }
     };
     return(
-        <ScrollView contentContainerStyle={styles.scrollContent}>
+        <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
             <View style={styles.imageContainer}>
                 <ImageCarousel images={resolvedImages} width={screenWidth} height={screenHeight / 2} />
                 <View style={[styles.backButtonPosition, floatingButtonStyle.button]}>
@@ -105,7 +93,7 @@ export default function DetailScreen(){
             </View>
             <View style={styles.section}>
                 <Text style={styles.sectionHeading}>Utilities</Text>
-                <View style={[styles.utilitiesGrid, styles.utilitiesSpacing, { height: utilitiesGridHeight }]}>
+                <View style={[styles.utilitiesGrid, styles.utilitiesSpacing]}>
                     {utilities?.map((utility: string) => (
                         <SelectionChip
                             key={utility}
@@ -176,6 +164,10 @@ export default function DetailScreen(){
 }
 
 const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: Colors.backgroundBase,
+    },
     scrollContent: {
         paddingBottom: 32,
     },
@@ -218,15 +210,12 @@ const styles = StyleSheet.create({
         marginBottom: 8,
     },
     utilitiesGrid: {
-        flexDirection: 'column',
+        flexDirection: 'row',
         flexWrap: 'wrap',
         alignItems: 'flex-start',
-        alignContent: 'flex-start',
-        rowGap: UTILITY_CHIP_GAP,
-        columnGap: UTILITY_CHIP_GAP,
     },
     utilitiesSpacing: {
-        paddingHorizontal: 12,
+        paddingHorizontal: 16,
         marginTop: 8,
     },
     sectionHeading: {
@@ -234,11 +223,11 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: '700',
         color: Colors.textPrimary,
-        paddingHorizontal: 12,
+        paddingHorizontal: 16,
     },
     reviewsRow: {
         gap: 12,
-        paddingHorizontal: 12,
+        paddingHorizontal: 16,
         marginTop: 8,
     },
     contactList: {

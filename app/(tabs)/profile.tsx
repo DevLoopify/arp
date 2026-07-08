@@ -397,6 +397,11 @@ export default function ProfileScreen() {
                 <Ionicons name="log-out-outline" size={18} color={Colors.live} />
                 <Text style={styles.logoutText}>Log Out</Text>
             </Pressable>
+
+            <Pressable style={styles.devButton} onPress={() => router.push('/checkup')}>
+                <Ionicons name="flask-outline" size={18} color={Colors.textMuted} />
+                <Text style={styles.devButtonText}>Quick CheckUp (Test)</Text>
+            </Pressable>
         </ScrollView>
 
         <Modal visible={showSavedToast} transparent animationType="fade">
@@ -647,6 +652,18 @@ const styles = StyleSheet.create({
     logoutText: {
         ...Typography.button,
         color: Colors.live,
+    },
+    devButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8,
+        marginTop: 20,
+        paddingVertical: 10,
+    },
+    devButtonText: {
+        ...Typography.caption,
+        color: Colors.textMuted,
     },
     toastOverlay: {
         flex: 1,
