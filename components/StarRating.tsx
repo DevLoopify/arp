@@ -23,11 +23,11 @@ function StarRating({ rating: ratingProp = 1, onRatingChange, size = 40 }: StarR
   return (
     <View style={styles.container}>
       {[1, 2, 3, 4, 5].map((star) => (
-        <TouchableOpacity key={star} onPress={() => handlePress(star)}>
+        <TouchableOpacity key={star} onPress={() => handlePress(star)} activeOpacity={0.7} hitSlop={6}>
           <Ionicons
             name={star <= rating ? "star" : "star-outline"}
             size={size}
-            color="#FFD700"
+            color={star <= rating ? "#FFD700" : "#D1D5DB"}
           />
         </TouchableOpacity>
       ))}

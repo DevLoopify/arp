@@ -48,7 +48,13 @@ export default function ReviewScreen() {
         await addReview(parsedWorkplace.id, { rating, comment });
       }
       const updatedWorkplace = await api.workplaces.get(parsedWorkplace.id);
-      router.replace({ pathname: '/(detail)/detail', params: { workplace: JSON.stringify(updatedWorkplace) } });
+      router.replace({
+        pathname: '/(detail)/detail',
+        params: {
+          workplace: JSON.stringify(updatedWorkplace),
+          reviewSubmitted: isEditMode ? 'updated' : 'created',
+        },
+      });
     } catch (err) {
       Alert.alert(
         isEditMode ? 'Could not update review' : 'Could not submit review',
@@ -118,19 +124,26 @@ export default function ReviewScreen() {
 
       {parsedWorkplace ? (
         <ScrollView contentContainerStyle={styles.content}>
-          <View style={styles.ratingWrapper}>
-            <StarRating rating={rating} onRatingChange={setRating} />
+          <Text style={styles.introText}>Help others know what to expect.</Text>
+
+          <View style={styles.ratingSection}>
+            <Text style={styles.sectionLabel}>Your Rating</Text>
+            <View style={styles.ratingWrapper}>
+              <StarRating rating={rating} onRatingChange={setRating} />
+            </View>
           </View>
 
-          <Text style={styles.sectionLabel}>Review</Text>
-          <TextInput
-            value={comment}
-            onChangeText={setComment}
-            placeholder="Add your Text here..."
-            placeholderTextColor={Colors.textMuted}
-            multiline
-            style={styles.commentInput}
-          />
+          <View>
+            <Text style={styles.sectionLabel}>Your Review</Text>
+            <TextInput
+              value={comment}
+              onChangeText={setComment}
+              placeholder="e.g. Quiet, great wifi, a bit crowded at noon..."
+              placeholderTextColor={Colors.textMuted}
+              multiline
+              style={styles.commentInput}
+            />
+          </View>
 
           {error && <Text style={styles.errorText}>{error}</Text>}
 
@@ -141,7 +154,7 @@ export default function ReviewScreen() {
         </ScrollView>
       ) : (
         <View style={styles.emptyState}>
-          <Text style={styles.emptyText}>Workplace-Daten fehlen.</Text>
+          <Text style={styles.emptyText}>Workplace data is missing.</Text>
         </View>
       )}
     </View>
@@ -180,6 +193,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 20,
     gap: 20,
+  },
+  introText: {
+    ...Typography.caption,
+    color: Colors.textSecondary,
+    lineHeight: 20,
+  },
+  ratingSection: {
+    gap: 0,
   },
   sectionLabel: {
     ...Typography.body,
