@@ -1,4 +1,5 @@
 import InfoTooltip from "@/components/InfoTooltip"
+import Colors from "@/constants/Colors"
 import utilityIcons, { getUtilityIcon } from "@/constants/utilityIcons"
 import { useFilters } from "@/context/FiltersContext"
 import { useSearchLocation } from "@/context/SearchLocationContext"
@@ -183,7 +184,7 @@ export default function FilterPopup({ visible, onClose }) {
                         <SelectionChip
                           key={utility}
                           text={utility}
-                          icon={<Ionicons name={getUtilityIcon(utility)} size={16} color={selected ? 'white' : '#1E88E5'} />}
+                          icon={<Ionicons name={getUtilityIcon(utility)} size={16} color={selected ? Colors.textWhite : Colors.primary} />}
                           selected={selected}
                           onPress={() => toggleUtility(utility)}
                         />
@@ -266,7 +267,6 @@ utilitiesGrid: {
   flexDirection: 'row',
   flexWrap: 'wrap',
   paddingHorizontal: 16,
-  gap: 8,
 },
 noiseRow: {
   flexDirection: 'row',

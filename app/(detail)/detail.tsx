@@ -16,14 +16,23 @@ import { getAvatarUri } from "@/utils/avatar";
 import { resolveImage } from "@/utils/resolveImage";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { router, useLocalSearchParams } from 'expo-router';
-import { Alert, Dimensions, Linking, Pressable, ScrollView, Share, StyleSheet, Text, View } from "react-native";
+import { useEffect, useState } from "react";
+import { Alert, Dimensions, Linking, Modal, Pressable, ScrollView, Share, StyleSheet, Text, View } from "react-native";
 
 const screenWidth = Dimensions.get('window').width;
 const screenHeight = Dimensions.get('window').height;
 
 export default function DetailScreen(){
-    const { workplace } = useLocalSearchParams<{ workplace: string }>();
+    const { workplace, reviewSubmitted } = useLocalSearchParams<{ workplace: string; reviewSubmitted?: string }>();
     const parsedWorkplace = JSON.parse(workplace);
+    const [showReviewToast, setShowReviewToast] = useState(false);
+
+    useEffect(() => {
+        if (!reviewSubmitted) return;
+        setShowReviewToast(true);
+        const timeout = setTimeout(() => setShowReviewToast(false), 1200);
+        return () => clearTimeout(timeout);
+    }, [reviewSubmitted]);
     const { rating, noise, crowdedness, reviews, utilities } = parsedWorkplace;
     const { user } = useAuth();
     const { deleteReview } = useWorkplaces();
@@ -49,6 +58,7 @@ export default function DetailScreen(){
         }
     };
     return(
+        <>
         <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
             <View style={styles.imageContainer}>
                 <ImageCarousel images={resolvedImages} width={screenWidth} height={screenHeight / 2} />
@@ -160,6 +170,18 @@ export default function DetailScreen(){
                 </View>
             )}
         </ScrollView>
+
+        <Modal visible={showReviewToast} transparent animationType="fade">
+            <View style={styles.toastOverlay} pointerEvents="none">
+                <View style={styles.toast}>
+                    <Ionicons name="checkmark-circle" size={18} color="#2E7D32" />
+                    <Text style={styles.toastText}>
+                        {reviewSubmitted === 'updated' ? 'Review updated' : 'Review submitted'}
+                    </Text>
+                </View>
+            </View>
+        </Modal>
+        </>
     )
 }
 
@@ -253,5 +275,29 @@ const styles = StyleSheet.create({
         color: Colors.live,
         letterSpacing: 0.5,
         textTransform: 'uppercase',
+    },
+    toastOverlay: {
+        flex: 1,
+        alignItems: 'center',
+        paddingTop: 60,
+    },
+    toast: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        backgroundColor: '#DFF5E1',
+        paddingVertical: 10,
+        paddingHorizontal: 16,
+        borderRadius: 20,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
+    },
+    toastText: {
+        color: '#2E7D32',
+        fontSize: 14,
+        fontWeight: '700',
     },
 });
