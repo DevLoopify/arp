@@ -2,6 +2,7 @@ export type WorkspaceDraft = {
     name: string;
     description: string;
     selectedUtilities: string[];
+    workMode: string;
     photoUris: string[];
     markerCoordinate: { latitude: number; longitude: number } | null;
 };

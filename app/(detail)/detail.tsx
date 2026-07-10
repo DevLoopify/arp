@@ -9,6 +9,7 @@ import crowdLevels from "@/constants/crowdLevels";
 import floatingButtonStyle from "@/constants/floatingButtonStyle";
 import Typography from "@/constants/Typography";
 import { getUtilityIcon } from "@/constants/utilityIcons";
+import { getWorkModeIcon, getWorkModeLabel } from "@/constants/workModeIcons";
 import workplaceMetaStyles from "@/constants/workplaceMetaStyles";
 import { useAuth } from "@/context/AuthContext";
 import { useWorkplaces } from "@/context/WorkplacesContext";
@@ -80,6 +81,10 @@ export default function DetailScreen(){
                 <View style={workplaceMetaStyles.metaItem}>
                     <Ionicons name="star" size={16} color="#FFD700" />
                     <Text style={workplaceMetaStyles.metaText}>{rating.toFixed(1)}</Text>
+                </View>
+                <View style={workplaceMetaStyles.metaItem}>
+                    <Ionicons name={getWorkModeIcon(parsedWorkplace.workMode)} size={16} color={Colors.textMuted} />
+                    <Text style={workplaceMetaStyles.metaText}>{getWorkModeLabel(parsedWorkplace.workMode)}</Text>
                 </View>
                 <View style={styles.liveBoxWrapper}>
                     <Text style={styles.liveLabel}>Live</Text>

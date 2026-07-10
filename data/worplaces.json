@@ -14,6 +14,7 @@
       "longitude": 8.6527,
       "utilities": ["wifi", "power outlets", "restrooms", "printer", "coffee", "quiet zones", "drinking water", "public transit"],
       "noise": 3,
+      "workMode": "both",
       "images": [
         "../assets/images/Unknown.jpg",
         "../assets/images/Unknown-2.jpg"
@@ -38,6 +39,7 @@
       "longitude": 8.6535,
       "utilities": ["wifi", "restrooms", "coffee", "microwave", "power outlets", "printer"],
       "noise": 4,
+      "workMode": "group",
       "images": [
         "../assets/images/Unknown-3.jpg",
         "../assets/images/Unknown-4.jpg"
@@ -62,6 +64,7 @@
       "longitude": 8.6512,
       "utilities": ["benches", "public transit", "drinking water", "restrooms"],
       "noise": 4,
+      "workMode": "group",
       "images": [
         "../assets/images/Luisenplatz Darmstadt Innenstadt Entwicklungskonzept 09062023.webp",
         "../assets/images/unnamed.jpg"
@@ -86,6 +89,7 @@
       "longitude": 8.6549,
       "utilities": ["wifi", "power outlets", "restrooms", "printer", "quiet zones", "coffee", "drinking water", "public transit", "microwave", "benches"],
       "noise": 1,
+      "workMode": "solo",
       "images": [
         "../assets/images/Unknown-5.jpg",
         "../assets/images/Unknown-6.jpg",
@@ -113,6 +117,7 @@
       "longitude": 8.6551,
       "utilities": ["benches", "drinking water", "public transit"],
       "noise": 2,
+      "workMode": "both",
       "images": [],
       "rating": 4.4,
       "crowdedness": "empty",

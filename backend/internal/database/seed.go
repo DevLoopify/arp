@@ -26,6 +26,7 @@ type seedWorkplace struct {
 	Utilities          []string     `json:"utilities"`
 	Noise              int          `json:"noise"`
 	Images             []string     `json:"images"`
+	WorkMode           string       `json:"workMode"`
 	Crowdedness        string       `json:"crowdedness"`
 	CrowdByHourAverage []string     `json:"crowdByHourAverage"`
 	CrowdByHourToday   []string     `json:"crowdByHourToday"`
@@ -83,12 +84,15 @@ func Seed(ctx context.Context, pool *pgxpool.Pool, seedFilePath string, force bo
 		if wp.Images == nil {
 			wp.Images = []string{}
 		}
+		if wp.WorkMode == "" {
+			wp.WorkMode = "both"
+		}
 
 		_, err := tx.Exec(ctx, `
-			INSERT INTO workplaces (id, title, description, latitude, longitude, utilities, noise, images,
+			INSERT INTO workplaces (id, title, description, latitude, longitude, utilities, noise, images, work_mode,
 			                        crowdedness, crowd_by_hour_average, crowd_by_hour_today, phone_number, email)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
-			wp.ID, wp.Title, wp.Description, wp.Latitude, wp.Longitude, wp.Utilities, wp.Noise, wp.Images,
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
+			wp.ID, wp.Title, wp.Description, wp.Latitude, wp.Longitude, wp.Utilities, wp.Noise, wp.Images, wp.WorkMode,
 			wp.Crowdedness, wp.CrowdByHourAverage, wp.CrowdByHourToday, wp.PhoneNumber, wp.Email,
 		)
 		if err != nil {

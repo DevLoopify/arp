@@ -4,6 +4,7 @@ import SelectionChip from '@/components/SelectionChip';
 import Colors from '@/constants/Colors';
 import Typography from '@/constants/Typography';
 import utilityIcons, { getUtilityIcon } from '@/constants/utilityIcons';
+import { getWorkModeIcon, getWorkModeLabel } from '@/constants/workModeIcons';
 import { useWorkplaces } from '@/context/WorkplacesContext';
 import useCurrentLocation from '@/hooks/useCurrentLocation';
 import { Workplace } from '@/utils/api';
@@ -17,6 +18,7 @@ import { Alert, BackHandler, Image, Pressable, ScrollView, StyleSheet, Text, Vie
 import MapView, { MapPressEvent, Marker } from 'react-native-maps';
 
 const UTILITIES = Object.keys(utilityIcons);
+const WORK_MODES = ['solo', 'group', 'both'];
 
 const FALLBACK_REGION = {
     latitude: 52.5200,
@@ -38,6 +40,7 @@ export default function CreateWorkspace() {
     const [selectedUtilities, setSelectedUtilities] = useState<string[]>(
         editingWorkplace?.utilities ?? draft?.selectedUtilities ?? []
     );
+    const [workMode, setWorkMode] = useState<string>(editingWorkplace?.workMode ?? draft?.workMode ?? 'both');
     const [existingImages, setExistingImages] = useState<string[]>(editingWorkplace?.images ?? []);
     const [newPhotoUris, setNewPhotoUris] = useState<string[]>(isEditMode ? [] : draft?.photoUris ?? []);
     const [markerCoordinate, setMarkerCoordinate] = useState<{ latitude: number; longitude: number } | null>(
@@ -94,6 +97,7 @@ export default function CreateWorkspace() {
         ? name !== editingWorkplace.title ||
           description !== editingWorkplace.description ||
           JSON.stringify(selectedUtilities) !== JSON.stringify(editingWorkplace.utilities) ||
+          workMode !== editingWorkplace.workMode ||
           JSON.stringify(existingImages) !== JSON.stringify(editingWorkplace.images) ||
           newPhotoUris.length > 0 ||
           markerCoordinate?.latitude !== editingWorkplace.latitude ||
@@ -134,6 +138,7 @@ export default function CreateWorkspace() {
                             name,
                             description,
                             selectedUtilities,
+                            workMode,
                             photoUris: newPhotoUris,
                             markerCoordinate,
                         });
@@ -150,7 +155,7 @@ export default function CreateWorkspace() {
             return true;
         });
         return () => subscription.remove();
-    }, [hasUnsavedChanges, name, description, selectedUtilities, existingImages, newPhotoUris, markerCoordinate]);
+    }, [hasUnsavedChanges, name, description, selectedUtilities, workMode, existingImages, newPhotoUris, markerCoordinate]);
 
     const initialRegion = markerCoordinate
         ? { ...markerCoordinate, latitudeDelta: 0.02, longitudeDelta: 0.02 }
@@ -185,6 +190,7 @@ export default function CreateWorkspace() {
                     name,
                     description,
                     utilities: selectedUtilities,
+                    workMode,
                     location: markerCoordinate!,
                     existingImages,
                     newPhotoUris,
@@ -194,6 +200,7 @@ export default function CreateWorkspace() {
                     name,
                     description,
                     utilities: selectedUtilities,
+                    workMode,
                     location: markerCoordinate!,
                     photoUris: newPhotoUris,
                 });
@@ -243,6 +250,19 @@ export default function CreateWorkspace() {
                                 icon={<Ionicons name={getUtilityIcon(utility)} size={16} color={selectedUtilities.includes(utility) ? Colors.textWhite : Colors.primary} />}
                                 selected={selectedUtilities.includes(utility)}
                                 onPress={() => toggleUtility(utility)}
+                            />
+                        ))}
+                    </View>
+
+                    <Text style={[Typography.caption, styles.sectionLabel]}>Work Mode</Text>
+                    <View style={styles.chipsContainer}>
+                        {WORK_MODES.map((mode) => (
+                            <SelectionChip
+                                key={mode}
+                                text={getWorkModeLabel(mode)}
+                                icon={<Ionicons name={getWorkModeIcon(mode)} size={16} color={workMode === mode ? Colors.textWhite : Colors.primary} />}
+                                selected={workMode === mode}
+                                onPress={() => setWorkMode(mode)}
                             />
                         ))}
                     </View>

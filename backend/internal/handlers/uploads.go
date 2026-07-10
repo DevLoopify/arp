@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-const maxUploadSize = 10 << 20 // 10 MB
+const maxUploadSize = 10 << 20 // sind 10 mega byte
 
 var allowedImageExts = map[string]bool{
 	".jpg": true, ".jpeg": true, ".png": true, ".webp": true, ".heic": true,

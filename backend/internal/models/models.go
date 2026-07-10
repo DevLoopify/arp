@@ -34,6 +34,7 @@ type Workplace struct {
 	Utilities          []string `json:"utilities"`
 	Noise              int      `json:"noise"`
 	Images             []string `json:"images"`
+	WorkMode           string   `json:"workMode"`
 	Rating             float64  `json:"rating"`
 	Crowdedness        string   `json:"crowdedness"`
 	CrowdByHourAverage []string `json:"crowdByHourAverage"`

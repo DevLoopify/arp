@@ -14,7 +14,7 @@ func Load() Config {
 	return Config{
 		Port:        getEnv("PORT", "8080"),
 		DatabaseURL: getEnv("DATABASE_URL", "postgres://arp:arp@localhost:5432/arp?sslmode=disable"),
-		JWTSecret:   getEnv("JWT_SECRET", "dev-secret-change-me"),
+		JWTSecret:   getEnv("JWT_SECRET", "blah-blah"),
 		UploadDir:   getEnv("UPLOAD_DIR", "./uploads"),
 		SeedFile:    getEnv("SEED_FILE", "./data/worplaces.json"),
 	}

@@ -15,11 +15,17 @@ function matchesRadius(workplace, userLocation, radiusMeters) {
     return getDistanceKm(userLocation, workplace) * 1000 <= radiusMeters;
 }
 
+function matchesWorkMode(workplace, groupWorkOnly) {
+    if (!groupWorkOnly) return true;
+    return workplace.workMode === 'group' || workplace.workMode === 'both';
+}
+
 export function applyFilters(workplaces, filters, userLocation) {
     return workplaces.filter(
         (workplace) =>
             matchesNoise(workplace, filters.noiseLevel) &&
             matchesUtilities(workplace, filters.utilities) &&
-            matchesRadius(workplace, userLocation, filters.radiusMeters)
+            matchesRadius(workplace, userLocation, filters.radiusMeters) &&
+            matchesWorkMode(workplace, filters.groupWorkOnly)
     );
 }

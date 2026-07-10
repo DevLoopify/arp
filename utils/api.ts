@@ -73,6 +73,7 @@ export type WorkplacePayload = {
     longitude: number;
     utilities: string[];
     images: string[];
+    workMode: string;
 };
 export type Workplace = {
     id: number;
@@ -83,6 +84,7 @@ export type Workplace = {
     utilities: string[];
     noise: number;
     images: string[];
+    workMode: string;
     rating: number;
     crowdedness: string;
     crowdByHourAverage: string[];

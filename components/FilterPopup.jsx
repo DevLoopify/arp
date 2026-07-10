@@ -7,7 +7,7 @@ import { useUserProfile } from "@/context/UserProfileContext"
 import { Ionicons } from "@expo/vector-icons"
 import Slider from "@react-native-community/slider"
 import { useEffect, useRef, useState } from "react"
-import { Animated, Dimensions, Modal, PanResponder, Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
+import { Dimensions, Modal, PanResponder, Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-native"
 import useCurrentLocation from "../hooks/useCurrentLocation"
 import MapContainer from "./MapContainer"
 import SelectionChip from "./SelectionChip"
@@ -16,19 +16,13 @@ const UTILITIES = Object.keys(utilityIcons)
 const NOISE_LEVELS = [1, 2, 3, 4, 5]
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window")
-const TOGGLE_WIDTH = SCREEN_WIDTH - 32
-const TOGGLE_HEIGHT = 50
-const KNOB_MARGIN = 4
-const KNOB_WIDTH = TOGGLE_WIDTH / 2 - KNOB_MARGIN * 2
-const KNOB_HEIGHT = TOGGLE_HEIGHT - KNOB_MARGIN * 2
 
 export default function FilterPopup({ visible, onClose }) {
     const [noiseLevel, setNoiseLevel] = useState(null)
     const [radius, setRadius] = useState(500)
-    const [workMode, setWorkMode] = useState('solo')
+    const [groupWorkOnly, setGroupWorkOnly] = useState(false)
     const [selectedUtilities, setSelectedUtilities] = useState([])
     const [showAppliedToast, setShowAppliedToast] = useState(false)
-    const slideAnim = useRef(new Animated.Value(0)).current
     const { location: gpsLocation, permissionGranted } = useCurrentLocation()
     const { searchLocation } = useSearchLocation()
     const location = searchLocation ?? gpsLocation
@@ -42,8 +36,7 @@ export default function FilterPopup({ visible, onClose }) {
         setNoiseLevel(filters.noiseLevel)
         setRadius(filters.radiusMeters ?? defaultFilters.radiusMeters ?? 500)
         setSelectedUtilities(filters.utilities)
-        setWorkMode(profileSettings.workMode)
-        slideAnim.setValue(profileSettings.workMode === 'group' ? 1 : 0)
+        setGroupWorkOnly(filters.groupWorkOnly ?? profileSettings.workMode === 'group')
     }, [visible])
     const panResponder = useRef(
     PanResponder.create({
@@ -55,40 +48,22 @@ export default function FilterPopup({ visible, onClose }) {
 })
     ).current
 
-    const knobTranslateX = slideAnim.interpolate({
-        inputRange: [0, 1],
-        outputRange: [KNOB_MARGIN, TOGGLE_WIDTH - KNOB_WIDTH - KNOB_MARGIN],
-    })
-
     const toggleUtility = (utility) => {
         setSelectedUtilities((prev) =>
             prev.includes(utility) ? prev.filter((u) => u !== utility) : [...prev, utility]
         )
     }
 
-    const toggleWorkMode = () => {
-        const next = workMode === 'solo' ? 'group' : 'solo'
-        setWorkMode(next)
-        Animated.timing(slideAnim, {
-            toValue: next === 'group' ? 1 : 0,
-            duration: 200,
-            useNativeDriver: true,
-        }).start()
-    }
-
     const handleReset = () => {
         setNoiseLevel(defaultFilters.noiseLevel)
         setRadius(defaultFilters.radiusMeters ?? 500)
         setSelectedUtilities(defaultFilters.utilities)
-        setWorkMode(profileSettings.workMode)
-        slideAnim.setValue(profileSettings.workMode === 'group' ? 1 : 0)
+        setGroupWorkOnly(defaultFilters.groupWorkOnly)
         resetFilters()
     }
 
-    // Work mode has no matching field on a workplace, so it's UI-only for now and isn't
-    // part of what actually gets applied to the list/map.
     const handleApply = () => {
-        setFilters({ noiseLevel, radiusMeters: radius, utilities: selectedUtilities })
+        setFilters({ noiseLevel, radiusMeters: radius, utilities: selectedUtilities, groupWorkOnly })
         onClose()
         setShowAppliedToast(true)
         setTimeout(() => setShowAppliedToast(false), 1200)
@@ -159,15 +134,20 @@ export default function FilterPopup({ visible, onClose }) {
                   </View>
                 </View>
                 <View style={styles.workModeSection}>
-                  <Text style={styles.title}>Work Mode</Text>
-                  <Pressable onPress={toggleWorkMode} style={styles.toggleButton}>
-                    <Animated.View
-                      style={[styles.toggleKnob, { transform: [{ translateX: knobTranslateX }] }]}
+                  <View style={styles.workModeRow}>
+                    <View style={styles.workModeTextWrapper}>
+                      <Text style={[styles.title, styles.workModeTitleText]}>Group Work</Text>
+                      <Text style={styles.workModeHint}>
+                        Only show workplaces suitable for group work
+                      </Text>
+                    </View>
+                    <Switch
+                      value={groupWorkOnly}
+                      onValueChange={setGroupWorkOnly}
+                      trackColor={{ false: '#ccc', true: Colors.primary }}
+                      thumbColor="#fff"
                     />
-                    <Text style={styles.toggleLabel}>
-                      {workMode === 'solo' ? 'Solo Work' : 'Group Work'}
-                    </Text>
-                  </Pressable>
+                  </View>
                 </View>
                 <View style={styles.utilitiesSection}>
                   <View style={styles.titleRow}>
@@ -313,29 +293,23 @@ scrollContent: {
 workModeSection: {
   marginTop: 24,
 },
-toggleButton: {
-  width: TOGGLE_WIDTH,
-  height: TOGGLE_HEIGHT,
-  borderRadius: TOGGLE_HEIGHT / 2,
-  backgroundColor: '#90CAF9',
-  marginHorizontal: 16,
-  justifyContent: 'center',
+workModeRow: {
+  flexDirection: 'row',
   alignItems: 'center',
-  overflow: 'hidden',
+  justifyContent: 'space-between',
+  paddingHorizontal: 16,
 },
-toggleKnob: {
-  position: 'absolute',
-  top: KNOB_MARGIN,
-  left: 0,
-  width: KNOB_WIDTH,
-  height: KNOB_HEIGHT,
-  borderRadius: KNOB_HEIGHT / 2,
-  backgroundColor: '#1E88E5',
+workModeTextWrapper: {
+  flex: 1,
+  marginRight: 12,
 },
-toggleLabel: {
-  color: 'white',
-  fontSize: 16,
-  fontWeight: '700',
+workModeTitleText: {
+  paddingHorizontal: 0,
+  marginBottom: 2,
+},
+workModeHint: {
+  fontSize: 13,
+  color: '#666',
 },
 footer: {
   flexDirection: 'row',

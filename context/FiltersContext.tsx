@@ -7,12 +7,14 @@ export type Filters = {
     noiseLevel: NoiseLevel;
     radiusMeters: number | null;
     utilities: string[];
+    groupWorkOnly: boolean;
 };
 
 export const DEFAULT_FILTERS: Filters = {
     noiseLevel: null,
     radiusMeters: null,
     utilities: [],
+    groupWorkOnly: false,
 };
 
 type FiltersContextValue = {
@@ -32,6 +34,7 @@ export function FiltersProvider({ children }: { children: ReactNode }) {
             noiseLevel: settings.noiseLevel,
             radiusMeters: settings.radius,
             utilities: settings.utilities,
+            groupWorkOnly: settings.workMode === 'group',
         }),
         [settings]
     );
