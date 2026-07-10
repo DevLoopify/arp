@@ -53,6 +53,10 @@ func (s *Server) Router() http.Handler {
 
 	r.With(s.Auth.Middleware).Post("/api/uploads", s.UploadImage)
 
+	// internal/ops only — not called by the app, meant to be curled from the host shell.
+	r.Post("/api/notify/{userId}", s.TriggerNotification)
+	r.With(s.Auth.Middleware).Get("/api/notifications/poll", s.PollNotifications)
+
 	fileServer := http.FileServer(http.Dir(s.UploadDir))
 	r.Handle("/uploads/*", http.StripPrefix("/uploads/", fileServer))
 

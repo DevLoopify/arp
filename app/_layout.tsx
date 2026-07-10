@@ -1,3 +1,4 @@
+import NotificationBanner from '@/components/NotificationBanner';
 import { AuthProvider } from '@/context/AuthContext';
 import { FavouritesProvider } from '@/context/FavouritesContext';
 import { FiltersProvider } from '@/context/FiltersContext';
@@ -17,6 +18,7 @@ export default function RootLayout() {
                 <Stack screenOptions={{ headerShown: false }}
                 initialRouteName="login">
                 </Stack>
+                <NotificationBanner />
               </SearchLocationProvider>
             </FiltersProvider>
           </UserProfileProvider>

@@ -8,6 +8,7 @@ import { getWorkModeIcon, getWorkModeLabel } from '@/constants/workModeIcons';
 import { useWorkplaces } from '@/context/WorkplacesContext';
 import useCurrentLocation from '@/hooks/useCurrentLocation';
 import { Workplace } from '@/utils/api';
+import { getDistanceKm } from '@/utils/geo';
 import { resolveImage } from '@/utils/resolveImage';
 import { clearWorkspaceDraft, getWorkspaceDraft, saveWorkspaceDraft } from '@/utils/workspaceDraft';
 import { Ionicons } from '@expo/vector-icons';
@@ -19,6 +20,7 @@ import MapView, { MapPressEvent, Marker } from 'react-native-maps';
 
 const UTILITIES = Object.keys(utilityIcons);
 const WORK_MODES = ['solo', 'group', 'both'];
+const NEARBY_THRESHOLD_KM = 0.1;
 
 const FALLBACK_REGION = {
     latitude: 52.5200,
@@ -55,7 +57,15 @@ export default function CreateWorkspace() {
         permissionGranted: boolean;
     };
     const mapRef = useRef<MapView>(null);
-    const { addWorkplace, updateWorkplace } = useWorkplaces();
+    const { workplaces, addWorkplace, updateWorkplace } = useWorkplaces();
+
+    const findNearbyWorkplace = (coordinate: { latitude: number; longitude: number }) => {
+        return workplaces.find(
+            (wp) =>
+                (!editingWorkplace || wp.id !== editingWorkplace.id) &&
+                getDistanceKm(coordinate, wp) <= NEARBY_THRESHOLD_KM
+        );
+    };
 
     const toggleUtility = (utility: string) => {
         setSelectedUtilities((prev) =>
@@ -183,6 +193,24 @@ export default function CreateWorkspace() {
             return;
         }
         setError(null);
+
+        const nearby = findNearbyWorkplace(markerCoordinate!);
+        if (nearby) {
+            Alert.alert(
+                'Is this the same place?',
+                `There's already a workplace called "${nearby.title}" very close to this pin. Did you mean that one?`,
+                [
+                    { text: 'No, different place', style: 'cancel', onPress: () => performSubmit() },
+                    { text: 'Yes, take me there', onPress: () => router.back() },
+                ]
+            );
+            return;
+        }
+
+        await performSubmit();
+    };
+
+    const performSubmit = async () => {
         setIsSubmitting(true);
         try {
             if (editingWorkplace) {

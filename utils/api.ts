@@ -95,6 +95,8 @@ export type Workplace = {
     reviews: Review[];
 };
 
+export type AppNotification = { message: string; action: string };
+
 export const api = {
     auth: {
         register: (name: string, email: string, password: string) =>
@@ -125,6 +127,10 @@ export const api = {
         list: (token: string) => request<number[]>('/favourites', { token }),
         add: (token: string, workplaceId: number) => request<void>(`/favourites/${workplaceId}`, { method: 'POST', token }),
         remove: (token: string, workplaceId: number) => request<void>(`/favourites/${workplaceId}`, { method: 'DELETE', token }),
+    },
+    notifications: {
+        poll: (token: string) =>
+            request<{ notification: AppNotification | null }>('/notifications/poll', { token }),
     },
     uploads: {
         upload: async (token: string, fileUri: string): Promise<{ url: string }> => {
