@@ -7,6 +7,8 @@ export type NewWorkplaceEntry = {
     description: string;
     utilities: string[];
     workMode: string;
+    opensAt: string | null;
+    closesAt: string | null;
     location: { latitude: number; longitude: number };
     photoUris: string[];
 };
@@ -16,6 +18,8 @@ export type WorkplaceEdit = {
     description: string;
     utilities: string[];
     workMode: string;
+    opensAt: string | null;
+    closesAt: string | null;
     location: { latitude: number; longitude: number };
     existingImages: string[];
     newPhotoUris: string[];
@@ -62,6 +66,8 @@ export function WorkplacesProvider({ children }: { children: ReactNode }) {
                 longitude: entry.location.longitude,
                 utilities: entry.utilities,
                 workMode: entry.workMode,
+                opensAt: entry.opensAt,
+                closesAt: entry.closesAt,
                 images: uploaded.map((u) => u.url),
             });
 
@@ -84,6 +90,8 @@ export function WorkplacesProvider({ children }: { children: ReactNode }) {
                 longitude: entry.location.longitude,
                 utilities: entry.utilities,
                 workMode: entry.workMode,
+                opensAt: entry.opensAt,
+                closesAt: entry.closesAt,
                 images: [...entry.existingImages, ...uploaded.map((u) => u.url)],
             });
 

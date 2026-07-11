@@ -1,6 +1,7 @@
 import Colors from '@/constants/Colors';
 import { useState } from 'react';
-import { FlatList, Image, StyleSheet, View } from 'react-native';
+import { Image, StyleSheet, View } from 'react-native';
+import { FlatList } from 'react-native-gesture-handler';
 
 export default function ImageCarousel({ images, width, height = 220 }) {
     const [activeIndex, setActiveIndex] = useState(0);

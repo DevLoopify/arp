@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"regexp"
 	"strconv"
 
 	"arp-backend/internal/auth"
@@ -21,14 +22,29 @@ type createWorkplaceRequest struct {
 	Utilities   []string `json:"utilities"`
 	Images      []string `json:"images"`
 	WorkMode    string   `json:"workMode"`
+	OpensAt     *string  `json:"opensAt"`
+	ClosesAt    *string  `json:"closesAt"`
 }
 
 var validWorkplaceWorkModes = map[string]bool{"solo": true, "group": true, "both": true}
 
+var timeOfDayPattern = regexp.MustCompile(`^([01]\d|2[0-3]):([0-5]\d)$`)
+
+func validTimeOfDay(t *string) bool {
+	return t == nil || *t == "" || timeOfDayPattern.MatchString(*t)
+}
+
+func normalizeTimeOfDay(t *string) *string {
+	if t == nil || *t == "" {
+		return nil
+	}
+	return t
+}
+
 func (s *Server) ListWorkplaces(w http.ResponseWriter, r *http.Request) {
 	rows, err := s.DB.Query(r.Context(), `
 		SELECT id, title, description, latitude, longitude, utilities, noise, images, work_mode,
-		       crowdedness, crowd_by_hour_average, crowd_by_hour_today, phone_number, email, owner_user_id
+		       crowdedness, crowd_by_hour_average, crowd_by_hour_today, phone_number, email, opens_at, closes_at, owner_user_id
 		FROM workplaces
 		ORDER BY id`)
 	if err != nil {
@@ -64,7 +80,7 @@ func (s *Server) GetWorkplace(w http.ResponseWriter, r *http.Request) {
 
 	row := s.DB.QueryRow(r.Context(), `
 		SELECT id, title, description, latitude, longitude, utilities, noise, images, work_mode,
-		       crowdedness, crowd_by_hour_average, crowd_by_hour_today, phone_number, email, owner_user_id
+		       crowdedness, crowd_by_hour_average, crowd_by_hour_today, phone_number, email, opens_at, closes_at, owner_user_id
 		FROM workplaces WHERE id = $1`, id)
 
 	wp, err := scanWorkplace(row)
@@ -111,6 +127,10 @@ func (s *Server) CreateWorkplace(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid work mode")
 		return
 	}
+	if !validTimeOfDay(req.OpensAt) || !validTimeOfDay(req.ClosesAt) {
+		writeError(w, http.StatusBadRequest, "opening and closing times must be in HH:MM format")
+		return
+	}
 
 	emptyHours := make([]string, 24)
 	for i := range emptyHours {
@@ -120,11 +140,12 @@ func (s *Server) CreateWorkplace(w http.ResponseWriter, r *http.Request) {
 	var wp models.Workplace
 	row := s.DB.QueryRow(r.Context(), `
 		INSERT INTO workplaces (title, description, latitude, longitude, utilities, images, work_mode, crowdedness,
-		                         crowd_by_hour_average, crowd_by_hour_today, owner_user_id)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, 'empty', $8, $8, $9)
+		                         crowd_by_hour_average, crowd_by_hour_today, opens_at, closes_at, owner_user_id)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, 'empty', $8, $8, $9, $10, $11)
 		RETURNING id, title, description, latitude, longitude, utilities, noise, images, work_mode,
-		          crowdedness, crowd_by_hour_average, crowd_by_hour_today, phone_number, email, owner_user_id`,
-		req.Title, req.Description, req.Latitude, req.Longitude, req.Utilities, req.Images, req.WorkMode, emptyHours, userID,
+		          crowdedness, crowd_by_hour_average, crowd_by_hour_today, phone_number, email, opens_at, closes_at, owner_user_id`,
+		req.Title, req.Description, req.Latitude, req.Longitude, req.Utilities, req.Images, req.WorkMode, emptyHours,
+		normalizeTimeOfDay(req.OpensAt), normalizeTimeOfDay(req.ClosesAt), userID,
 	)
 
 	wp, err := scanWorkplace(row)
@@ -168,6 +189,10 @@ func (s *Server) UpdateWorkplace(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid work mode")
 		return
 	}
+	if !validTimeOfDay(req.OpensAt) || !validTimeOfDay(req.ClosesAt) {
+		writeError(w, http.StatusBadRequest, "opening and closing times must be in HH:MM format")
+		return
+	}
 
 	var ownerID *int
 	if err := s.DB.QueryRow(r.Context(), `SELECT owner_user_id FROM workplaces WHERE id = $1`, id).Scan(&ownerID); err != nil {
@@ -181,11 +206,13 @@ func (s *Server) UpdateWorkplace(w http.ResponseWriter, r *http.Request) {
 
 	row := s.DB.QueryRow(r.Context(), `
 		UPDATE workplaces
-		SET title = $1, description = $2, latitude = $3, longitude = $4, utilities = $5, images = $6, work_mode = $7
-		WHERE id = $8
+		SET title = $1, description = $2, latitude = $3, longitude = $4, utilities = $5, images = $6, work_mode = $7,
+		    opens_at = $8, closes_at = $9
+		WHERE id = $10
 		RETURNING id, title, description, latitude, longitude, utilities, noise, images, work_mode,
-		          crowdedness, crowd_by_hour_average, crowd_by_hour_today, phone_number, email, owner_user_id`,
-		req.Title, req.Description, req.Latitude, req.Longitude, req.Utilities, req.Images, req.WorkMode, id,
+		          crowdedness, crowd_by_hour_average, crowd_by_hour_today, phone_number, email, opens_at, closes_at, owner_user_id`,
+		req.Title, req.Description, req.Latitude, req.Longitude, req.Utilities, req.Images, req.WorkMode,
+		normalizeTimeOfDay(req.OpensAt), normalizeTimeOfDay(req.ClosesAt), id,
 	)
 
 	wp, err := scanWorkplace(row)
@@ -239,7 +266,7 @@ func scanWorkplace(row rowScanner) (models.Workplace, error) {
 	var ownerUserID *int
 	err := row.Scan(
 		&wp.ID, &wp.Title, &wp.Description, &wp.Latitude, &wp.Longitude, &wp.Utilities, &wp.Noise, &wp.Images, &wp.WorkMode,
-		&wp.Crowdedness, &wp.CrowdByHourAverage, &wp.CrowdByHourToday, &wp.PhoneNumber, &wp.Email, &ownerUserID,
+		&wp.Crowdedness, &wp.CrowdByHourAverage, &wp.CrowdByHourToday, &wp.PhoneNumber, &wp.Email, &wp.OpensAt, &wp.ClosesAt, &ownerUserID,
 	)
 	wp.OwnerUserID = ownerUserID
 	return wp, err

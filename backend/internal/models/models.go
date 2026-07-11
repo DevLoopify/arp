@@ -41,6 +41,8 @@ type Workplace struct {
 	CrowdByHourToday   []string `json:"crowdByHourToday"`
 	PhoneNumber        string   `json:"phoneNumber"`
 	Email              string   `json:"email"`
+	OpensAt            *string  `json:"opensAt,omitempty"`
+	ClosesAt           *string  `json:"closesAt,omitempty"`
 	OwnerUserID        *int     `json:"ownerUserId,omitempty"`
 	Reviews            []Review `json:"reviews"`
 }

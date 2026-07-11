@@ -2,6 +2,7 @@ import Colors from '@/constants/Colors';
 import Typography from '@/constants/Typography';
 import utilityIcons, { getUtilityIcon } from '@/constants/utilityIcons';
 import { useAuth } from '@/context/AuthContext';
+import { filtersFromProfileSettings, useFilters } from '@/context/FiltersContext';
 import { DistanceUnit, Language, NoiseLevel, useUserProfile, WorkMode } from '@/context/UserProfileContext';
 import { useWorkplaces } from '@/context/WorkplacesContext';
 import { Review, Workplace } from '@/utils/api';
@@ -40,6 +41,7 @@ const DEFAULT_AVATAR =
 
 export default function ProfileScreen() {
     const { settings, isLoaded, saveSettings } = useUserProfile();
+    const { setFilters } = useFilters();
     const { user } = useAuth();
     const { workplaces, deleteWorkplace, deleteReview } = useWorkplaces();
 
@@ -182,7 +184,7 @@ export default function ProfileScreen() {
 
     const handleSave = async () => {
         try {
-            await saveSettings({
+            const updated = await saveSettings({
                 name,
                 avatarUri,
                 noiseLevel,
@@ -192,6 +194,7 @@ export default function ProfileScreen() {
                 unit,
                 language,
             });
+            setFilters(filtersFromProfileSettings(updated));
             setShowSavedToast(true);
             setTimeout(() => setShowSavedToast(false), 1200);
         } catch (err) {

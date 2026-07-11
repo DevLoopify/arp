@@ -33,6 +33,8 @@ type seedWorkplace struct {
 	Reviews            []seedReview `json:"reviews"`
 	PhoneNumber        string       `json:"phoneNumber"`
 	Email              string       `json:"email"`
+	OpensAt            *string      `json:"opensAt"`
+	ClosesAt           *string      `json:"closesAt"`
 }
 
 type seedFile struct {
@@ -90,10 +92,10 @@ func Seed(ctx context.Context, pool *pgxpool.Pool, seedFilePath string, force bo
 
 		_, err := tx.Exec(ctx, `
 			INSERT INTO workplaces (id, title, description, latitude, longitude, utilities, noise, images, work_mode,
-			                        crowdedness, crowd_by_hour_average, crowd_by_hour_today, phone_number, email)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
+			                        crowdedness, crowd_by_hour_average, crowd_by_hour_today, phone_number, email, opens_at, closes_at)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`,
 			wp.ID, wp.Title, wp.Description, wp.Latitude, wp.Longitude, wp.Utilities, wp.Noise, wp.Images, wp.WorkMode,
-			wp.Crowdedness, wp.CrowdByHourAverage, wp.CrowdByHourToday, wp.PhoneNumber, wp.Email,
+			wp.Crowdedness, wp.CrowdByHourAverage, wp.CrowdByHourToday, wp.PhoneNumber, wp.Email, wp.OpensAt, wp.ClosesAt,
 		)
 		if err != nil {
 			return fmt.Errorf("insert workplace %d: %w", wp.ID, err)

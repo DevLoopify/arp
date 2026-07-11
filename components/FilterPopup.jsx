@@ -29,8 +29,6 @@ export default function FilterPopup({ visible, onClose }) {
     const { filters, defaultFilters, setFilters, resetFilters } = useFilters()
     const { settings: profileSettings } = useUserProfile()
 
-    // Reflect whatever is currently applied (which defaults to the profile's
-    // workplace preferences) each time the sheet is opened.
     useEffect(() => {
         if (!visible) return
         setNoiseLevel(filters.noiseLevel)

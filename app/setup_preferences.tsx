@@ -5,6 +5,7 @@ import TextButton from '@/components/TextButton';
 import Colors from '@/constants/Colors';
 import Typography from '@/constants/Typography';
 import utilityIcons, { getUtilityIcon } from '@/constants/utilityIcons';
+import { filtersFromProfileSettings, useFilters } from '@/context/FiltersContext';
 import { NoiseLevel, useUserProfile, WorkMode } from '@/context/UserProfileContext';
 import { Ionicons } from '@expo/vector-icons';
 import Slider from '@react-native-community/slider';
@@ -20,6 +21,7 @@ const KNOB_MARGIN = 4;
 
 export default function SetupPreferencesScreen() {
     const { settings, saveSettings } = useUserProfile();
+    const { setFilters } = useFilters();
 
     const [noiseLevel, setNoiseLevel] = useState<NoiseLevel>(settings.noiseLevel);
     const [radius, setRadius] = useState(settings.radius);
@@ -56,13 +58,14 @@ export default function SetupPreferencesScreen() {
     const handleContinue = async () => {
         setIsSaving(true);
         try {
-            await saveSettings({
+            const updated = await saveSettings({
                 ...settings,
                 noiseLevel,
                 radius,
                 workMode,
                 utilities: selectedUtilities,
             });
+            setFilters(filtersFromProfileSettings(updated));
             finish();
         } catch (err) {
             Alert.alert('Could not save preferences', err instanceof Error ? err.message : 'Please try again.');

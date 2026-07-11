@@ -4,30 +4,35 @@ import { ComponentProps } from 'react';
 type IconName = ComponentProps<typeof Ionicons>['name'];
 
 const utilityIcons: Record<string, IconName> = {
+    // High priority: essentials for working
     wifi: 'wifi-outline',
     'power outlets': 'flash-outline',
-    coffee: 'cafe-outline',
-    printer: 'print-outline',
     'quiet zones': 'volume-mute-outline',
     restrooms: 'body-outline',
     'drinking water': 'water-outline',
-    'public transit': 'bus-outline',
-    benches: 'leaf-outline',
-    microwave: 'restaurant-outline',
-    parking: 'car-outline',
-    'bike parking': 'bicycle-outline',
-    'outdoor seating': 'umbrella-outline',
+    '24/7 access': 'time-outline',
     accessible: 'accessibility-outline',
+
+    // Medium priority: comfort and convenience
+    coffee: 'cafe-outline',
+    printer: 'print-outline',
+    'meeting rooms': 'people-outline',
+    'monitors/screens': 'desktop-outline',
+    lockers: 'lock-closed-outline',
     'air conditioning': 'snow-outline',
     heating: 'flame-outline',
-    'natural light': 'sunny-outline',
-    'meeting rooms': 'people-outline',
-    lockers: 'lock-closed-outline',
-    'vending machine': 'fast-food-outline',
-    '24/7 access': 'time-outline',
-    'monitors/screens': 'desktop-outline',
-    spotless: 'sparkles-outline',
+    'public transit': 'bus-outline',
+    parking: 'car-outline',
+    'bike parking': 'bicycle-outline',
     'private workspace': 'person-circle-outline',
+
+    // Low priority: nice-to-haves
+    'natural light': 'sunny-outline',
+    'outdoor seating': 'umbrella-outline',
+    benches: 'leaf-outline',
+    microwave: 'restaurant-outline',
+    'vending machine': 'fast-food-outline',
+    spotless: 'sparkles-outline',
 };
 
 const fallbackIcon: IconName = 'checkmark-circle-outline';

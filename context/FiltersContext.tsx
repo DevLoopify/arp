@@ -1,4 +1,4 @@
-import { useUserProfile } from '@/context/UserProfileContext';
+import { UserProfileSettings, useUserProfile } from '@/context/UserProfileContext';
 import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 export type NoiseLevel = 1 | 2 | 3 | 4 | 5 | null;
@@ -17,6 +17,15 @@ export const DEFAULT_FILTERS: Filters = {
     groupWorkOnly: false,
 };
 
+export function filtersFromProfileSettings(settings: UserProfileSettings): Filters {
+    return {
+        noiseLevel: settings.noiseLevel,
+        radiusMeters: settings.radius,
+        utilities: settings.utilities,
+        groupWorkOnly: settings.workMode === 'group',
+    };
+}
+
 type FiltersContextValue = {
     filters: Filters;
     defaultFilters: Filters;
@@ -29,15 +38,7 @@ const FiltersContext = createContext<FiltersContextValue | undefined>(undefined)
 export function FiltersProvider({ children }: { children: ReactNode }) {
     const { settings, isLoaded } = useUserProfile();
 
-    const defaultFilters: Filters = useMemo(
-        () => ({
-            noiseLevel: settings.noiseLevel,
-            radiusMeters: settings.radius,
-            utilities: settings.utilities,
-            groupWorkOnly: settings.workMode === 'group',
-        }),
-        [settings]
-    );
+    const defaultFilters: Filters = useMemo(() => filtersFromProfileSettings(settings), [settings]);
 
     const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
     const hasAppliedProfileDefaults = useRef(false);

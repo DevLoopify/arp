@@ -74,6 +74,8 @@ export type WorkplacePayload = {
     utilities: string[];
     images: string[];
     workMode: string;
+    opensAt: string | null;
+    closesAt: string | null;
 };
 export type Workplace = {
     id: number;
@@ -91,6 +93,8 @@ export type Workplace = {
     crowdByHourToday: string[];
     phoneNumber: string;
     email: string;
+    opensAt?: string;
+    closesAt?: string;
     ownerUserId?: number;
     reviews: Review[];
 };

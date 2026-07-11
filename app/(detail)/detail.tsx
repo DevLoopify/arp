@@ -14,6 +14,7 @@ import workplaceMetaStyles from "@/constants/workplaceMetaStyles";
 import { useAuth } from "@/context/AuthContext";
 import { useWorkplaces } from "@/context/WorkplacesContext";
 import { getAvatarUri } from "@/utils/avatar";
+import { getLastUpdatedLabel } from "@/utils/lastUpdated";
 import { resolveImage } from "@/utils/resolveImage";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { router, useLocalSearchParams } from 'expo-router';
@@ -41,6 +42,7 @@ export default function DetailScreen(){
     const currentHour = new Date().getHours();
     const liveCrowdedness = parsedWorkplace.crowdByHourToday?.[currentHour] ?? crowdedness;
     const crowdLevel = crowdLevels[liveCrowdedness];
+    const lastUpdatedLabel = getLastUpdatedLabel();
     const handleShare = () => {
         const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${parsedWorkplace.latitude},${parsedWorkplace.longitude}`;
         Share.share({
@@ -77,33 +79,38 @@ export default function DetailScreen(){
                 </View>
             </View>
             <Text style={styles.title}>{parsedWorkplace.title}</Text>
-            <View style={styles.metaRow}>
-                <View style={workplaceMetaStyles.metaItem}>
-                    <Ionicons name="star" size={16} color="#FFD700" />
-                    <Text style={workplaceMetaStyles.metaText}>{rating.toFixed(1)}</Text>
-                </View>
-                <View style={workplaceMetaStyles.metaItem}>
-                    <Ionicons name={getWorkModeIcon(parsedWorkplace.workMode)} size={16} color={Colors.textMuted} />
-                    <Text style={workplaceMetaStyles.metaText}>{getWorkModeLabel(parsedWorkplace.workMode)}</Text>
-                </View>
-                <View style={styles.liveBoxWrapper}>
-                    <Text style={styles.liveLabel}>Live</Text>
-                    <View style={workplaceMetaStyles.liveBox}>
-                        <View style={workplaceMetaStyles.metaItem}>
-                            <Ionicons name="volume-medium-outline" size={16} color={Colors.textMuted} />
-                            <Text style={workplaceMetaStyles.metaText}>{noise}/5</Text>
-                        </View>
-                        {crowdLevel && (
+            <View style={styles.metaSection}>
+                <View style={styles.metaTopRow}>
+                    <View style={workplaceMetaStyles.metaItem}>
+                        <Ionicons name="star" size={16} color="#FFD700" />
+                        <Text style={workplaceMetaStyles.metaText}>{rating.toFixed(1)}</Text>
+                    </View>
+                    <View style={styles.liveBoxWrapper}>
+                        <Text style={styles.liveLabel}>Live</Text>
+                        <Text style={styles.updatedText}>Updated {lastUpdatedLabel}</Text>
+                        <View style={workplaceMetaStyles.liveBox}>
                             <View style={workplaceMetaStyles.metaItem}>
-                                <Ionicons name={crowdLevel.icon} size={16} color={crowdLevel.color} />
-                                <Text style={[workplaceMetaStyles.metaText, { color: crowdLevel.color }]}>{crowdLevel.label}</Text>
+                                <Ionicons name="volume-medium-outline" size={16} color={Colors.textMuted} />
+                                <Text style={workplaceMetaStyles.metaText}>{noise}/5</Text>
                             </View>
-                        )}
+                            {crowdLevel && (
+                                <View style={workplaceMetaStyles.metaItem}>
+                                    <Ionicons name={crowdLevel.icon} size={16} color={crowdLevel.color} />
+                                    <Text style={[workplaceMetaStyles.metaText, { color: crowdLevel.color }]}>{crowdLevel.label}</Text>
+                                </View>
+                            )}
+                        </View>
+                    </View>
+                    <View style={workplaceMetaStyles.metaItem}>
+                        <Ionicons name="chatbubble-outline" size={16} color={Colors.textMuted} />
+                        <Text style={workplaceMetaStyles.metaText}>{reviews.length} reviews</Text>
                     </View>
                 </View>
-                <View style={workplaceMetaStyles.metaItem}>
-                    <Ionicons name="chatbubble-outline" size={16} color={Colors.textMuted} />
-                    <Text style={workplaceMetaStyles.metaText}>{reviews.length} reviews</Text>
+                <View style={styles.metaBottomRow}>
+                    <View style={workplaceMetaStyles.metaItem}>
+                        <Ionicons name={getWorkModeIcon(parsedWorkplace.workMode)} size={16} color={Colors.textMuted} />
+                        <Text style={workplaceMetaStyles.metaText}>{getWorkModeLabel(parsedWorkplace.workMode)}</Text>
+                    </View>
                 </View>
             </View>
             <View style={styles.section}>
@@ -224,13 +231,20 @@ const styles = StyleSheet.create({
         marginTop: 20,
         marginBottom: 4,
     },
-    metaRow: {
+    metaSection: {
+        padding: 12,
+    },
+    metaTopRow: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        justifyContent: 'space-between',
+        gap: 12,
+    },
+    metaBottomRow: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        flexWrap: 'wrap',
-        gap: 12,
-        padding: 12,
+        marginTop: 10,
     },
     section: {
         marginTop: 24,
@@ -280,6 +294,11 @@ const styles = StyleSheet.create({
         color: Colors.live,
         letterSpacing: 0.5,
         textTransform: 'uppercase',
+    },
+    updatedText: {
+        ...Typography.caption,
+        fontSize: 10,
+        color: Colors.textMuted,
     },
     toastOverlay: {
         flex: 1,

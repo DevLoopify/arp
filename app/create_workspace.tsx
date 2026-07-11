@@ -21,6 +21,7 @@ import MapView, { MapPressEvent, Marker } from 'react-native-maps';
 const UTILITIES = Object.keys(utilityIcons);
 const WORK_MODES = ['solo', 'group', 'both'];
 const NEARBY_THRESHOLD_KM = 0.1;
+const TIME_OF_DAY_PATTERN = /^([01]\d|2[0-3]):([0-5]\d)$/;
 
 const FALLBACK_REGION = {
     latitude: 52.5200,
@@ -43,6 +44,8 @@ export default function CreateWorkspace() {
         editingWorkplace?.utilities ?? draft?.selectedUtilities ?? []
     );
     const [workMode, setWorkMode] = useState<string>(editingWorkplace?.workMode ?? draft?.workMode ?? 'both');
+    const [opensAt, setOpensAt] = useState<string>(editingWorkplace?.opensAt ?? draft?.opensAt ?? '');
+    const [closesAt, setClosesAt] = useState<string>(editingWorkplace?.closesAt ?? draft?.closesAt ?? '');
     const [existingImages, setExistingImages] = useState<string[]>(editingWorkplace?.images ?? []);
     const [newPhotoUris, setNewPhotoUris] = useState<string[]>(isEditMode ? [] : draft?.photoUris ?? []);
     const [markerCoordinate, setMarkerCoordinate] = useState<{ latitude: number; longitude: number } | null>(
@@ -108,11 +111,13 @@ export default function CreateWorkspace() {
           description !== editingWorkplace.description ||
           JSON.stringify(selectedUtilities) !== JSON.stringify(editingWorkplace.utilities) ||
           workMode !== editingWorkplace.workMode ||
+          opensAt !== (editingWorkplace.opensAt ?? '') ||
+          closesAt !== (editingWorkplace.closesAt ?? '') ||
           JSON.stringify(existingImages) !== JSON.stringify(editingWorkplace.images) ||
           newPhotoUris.length > 0 ||
           markerCoordinate?.latitude !== editingWorkplace.latitude ||
           markerCoordinate?.longitude !== editingWorkplace.longitude
-        : Boolean(name.trim() || description.trim() || selectedUtilities.length || totalPhotoCount || markerCoordinate);
+        : Boolean(name.trim() || description.trim() || selectedUtilities.length || opensAt || closesAt || totalPhotoCount || markerCoordinate);
 
     const handleLeaveAttempt = () => {
         if (!hasUnsavedChanges) {
@@ -149,6 +154,8 @@ export default function CreateWorkspace() {
                             description,
                             selectedUtilities,
                             workMode,
+                            opensAt: opensAt.trim() || null,
+                            closesAt: closesAt.trim() || null,
                             photoUris: newPhotoUris,
                             markerCoordinate,
                         });
@@ -165,7 +172,7 @@ export default function CreateWorkspace() {
             return true;
         });
         return () => subscription.remove();
-    }, [hasUnsavedChanges, name, description, selectedUtilities, workMode, existingImages, newPhotoUris, markerCoordinate]);
+    }, [hasUnsavedChanges, name, description, selectedUtilities, workMode, opensAt, closesAt, existingImages, newPhotoUris, markerCoordinate]);
 
     const initialRegion = markerCoordinate
         ? { ...markerCoordinate, latitudeDelta: 0.02, longitudeDelta: 0.02 }
@@ -190,6 +197,11 @@ export default function CreateWorkspace() {
 
         if (missing.length > 0) {
             setError(`Please add ${missing.join(', ')}.`);
+            return;
+        }
+        if ((opensAt.trim() && !TIME_OF_DAY_PATTERN.test(opensAt.trim())) ||
+            (closesAt.trim() && !TIME_OF_DAY_PATTERN.test(closesAt.trim()))) {
+            setError('Opening and closing times must be in HH:MM format.');
             return;
         }
         setError(null);
@@ -219,6 +231,8 @@ export default function CreateWorkspace() {
                     description,
                     utilities: selectedUtilities,
                     workMode,
+                    opensAt: opensAt.trim() || null,
+                    closesAt: closesAt.trim() || null,
                     location: markerCoordinate!,
                     existingImages,
                     newPhotoUris,
@@ -229,6 +243,8 @@ export default function CreateWorkspace() {
                     description,
                     utilities: selectedUtilities,
                     workMode,
+                    opensAt: opensAt.trim() || null,
+                    closesAt: closesAt.trim() || null,
                     location: markerCoordinate!,
                     photoUris: newPhotoUris,
                 });
@@ -293,6 +309,28 @@ export default function CreateWorkspace() {
                                 onPress={() => setWorkMode(mode)}
                             />
                         ))}
+                    </View>
+
+                    <Text style={[Typography.caption, styles.sectionLabel]}>Opening Hours (optional)</Text>
+                    <View style={styles.hoursRow}>
+                        <View style={styles.hoursField}>
+                            <InputField
+                                label="Opens at (HH:MM)"
+                                value={opensAt}
+                                onChangeText={setOpensAt}
+                                secureTextEntry={undefined}
+                                keyboardType="numbers-and-punctuation"
+                            />
+                        </View>
+                        <View style={styles.hoursField}>
+                            <InputField
+                                label="Closes at (HH:MM)"
+                                value={closesAt}
+                                onChangeText={setClosesAt}
+                                secureTextEntry={undefined}
+                                keyboardType="numbers-and-punctuation"
+                            />
+                        </View>
                     </View>
 
                     {totalPhotoCount > 0 ? (
@@ -452,6 +490,13 @@ const styles = StyleSheet.create({
     chipsContainer: {
         flexDirection: 'row',
         flexWrap: 'wrap',
+    },
+    hoursRow: {
+        flexDirection: 'row',
+        gap: 12,
+    },
+    hoursField: {
+        flex: 1,
     },
     mapWrapper: {
         height: 440,

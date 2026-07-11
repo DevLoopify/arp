@@ -62,6 +62,7 @@ export default function RegisterScreen() {
                     secureTextEntry={true}
                     keyboardType="default"
                 />
+                <Text style={authStyles.hint}>Must be at least 8 characters long.</Text>
                 <InputField
                     label="Confirm Password"
                     value={confirmPassword}

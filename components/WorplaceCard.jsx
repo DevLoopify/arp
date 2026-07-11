@@ -7,6 +7,8 @@ import workplaceMetaStyles from '@/constants/workplaceMetaStyles';
 import { useAuth } from '@/context/AuthContext';
 import { useWorkplaces } from '@/context/WorkplacesContext';
 import { formatDistance, getDistanceKm } from '@/utils/geo';
+import { getLastUpdatedLabel } from '@/utils/lastUpdated';
+import { getOpeningStatus } from '@/utils/openingHours';
 import { resolveImage } from '@/utils/resolveImage';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Link, router } from 'expo-router';
@@ -19,13 +21,15 @@ import SelectionChip from './SelectionChip';
 const MAX_VISIBLE_UTILITIES = 3;
 
 export default function WorkplaceCard({ workplace, userLocation = null, highlighted = false }) {
-    const { title, description, images, rating, noise, crowdedness, crowdByHourToday, utilities, latitude, longitude } = workplace;
+    const { title, description, images, rating, noise, crowdedness, crowdByHourToday, utilities, latitude, longitude, opensAt, closesAt } = workplace;
     const { user } = useAuth();
     const { deleteWorkplace } = useWorkplaces();
     const isOwner = user != null && workplace.ownerUserId === user.id;
     const resolvedImages = images.map(resolveImage).filter(Boolean);
     const liveCrowdedness = crowdByHourToday?.[new Date().getHours()] ?? crowdedness;
     const crowdLevel = crowdLevels[liveCrowdedness];
+    const openingStatus = getOpeningStatus(opensAt, closesAt);
+    const lastUpdatedLabel = getLastUpdatedLabel();
     const distanceLabel = userLocation
         ? formatDistance(getDistanceKm(userLocation, { latitude, longitude }))
         : null;
@@ -110,9 +114,16 @@ export default function WorkplaceCard({ workplace, userLocation = null, highligh
                             <Text style={styles.title} numberOfLines={1}>{title}</Text>
                             {distanceLabel && <Text style={styles.distance}>({distanceLabel})</Text>}
                         </View>
-                        <View style={workplaceMetaStyles.metaItem}>
-                            <Ionicons name="star" size={16} color="#FFD700" />
-                            <Text style={workplaceMetaStyles.metaText}>{rating.toFixed(1)}</Text>
+                        <View style={styles.ratingGroup}>
+                            <View style={workplaceMetaStyles.metaItem}>
+                                <Ionicons name="star" size={16} color="#FFD700" />
+                                <Text style={workplaceMetaStyles.metaText}>{rating.toFixed(1)}</Text>
+                            </View>
+                            {openingStatus && (
+                                <Text style={[styles.openingStatusText, openingStatus.isOpen ? styles.openingStatusOpen : styles.openingStatusClosed]}>
+                                    {openingStatus.label}
+                                </Text>
+                            )}
                         </View>
                     </View>
                     <Text style={styles.description} numberOfLines={2}>{description}</Text>
@@ -135,9 +146,12 @@ export default function WorkplaceCard({ workplace, userLocation = null, highligh
                     )}
 
                     <View style={styles.metaRow}>
-                        <View style={styles.liveIndicator}>
-                            <View style={styles.liveDot} />
-                            <Text style={styles.liveText}>LIVE</Text>
+                        <View style={styles.liveIndicatorGroup}>
+                            <View style={styles.liveIndicator}>
+                                <View style={styles.liveDot} />
+                                <Text style={styles.liveText}>LIVE</Text>
+                            </View>
+                            <Text style={styles.updatedText}>Updated {lastUpdatedLabel}</Text>
                         </View>
                         <View style={workplaceMetaStyles.liveBox}>
                             <View style={workplaceMetaStyles.metaItem}>
@@ -221,6 +235,21 @@ const styles = StyleSheet.create({
         color: Colors.textMuted,
         flexShrink: 0,
     },
+    ratingGroup: {
+        alignItems: 'flex-end',
+        gap: 2,
+    },
+    openingStatusText: {
+        ...Typography.caption,
+        fontSize: 11,
+        fontWeight: '600',
+    },
+    openingStatusOpen: {
+        color: '#2E7D32',
+    },
+    openingStatusClosed: {
+        color: Colors.live,
+    },
     description: {
         ...Typography.caption,
         color: Colors.textSecondary,
@@ -231,10 +260,18 @@ const styles = StyleSheet.create({
         gap: 8,
         marginTop: 4,
     },
+    liveIndicatorGroup: {
+        gap: 2,
+    },
     liveIndicator: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 4,
+    },
+    updatedText: {
+        ...Typography.caption,
+        fontSize: 10,
+        color: Colors.textMuted,
     },
     liveDot: {
         width: 6,

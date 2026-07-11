@@ -7,7 +7,7 @@ import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Platform, Pressable, StyleSheet, Text } from 'react-native';
 
-const POLL_INTERVAL_MS = 15000;
+const POLL_INTERVAL_MS = 5000;
 
 export default function NotificationBanner() {
     const { token } = useAuth();
