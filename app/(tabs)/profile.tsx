@@ -10,8 +10,8 @@ import { Ionicons } from '@expo/vector-icons';
 import Slider from '@react-native-community/slider';
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
-import { Alert, Animated, Image, LayoutAnimation, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, UIManager, View,} from 'react-native';
+import { useEffect, useState } from 'react';
+import { Alert, Image, LayoutAnimation, Modal, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, UIManager, View,} from 'react-native';
 import InputField from '@/components/InputField';
 import SelectionChip from '@/components/SelectionChip';
 
@@ -20,9 +20,6 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 }
 
 const UTILITIES = Object.keys(utilityIcons);
-
-const TOGGLE_HEIGHT = 50;
-const KNOB_MARGIN = 4;
 
 const UNIT_OPTIONS = [
     { value: 'km', label: 'Kilometers' },
@@ -59,9 +56,6 @@ export default function ProfileScreen() {
 
     const [showSavedToast, setShowSavedToast] = useState(false);
 
-    const [toggleWidth, setToggleWidth] = useState(0);
-    const slideAnim = useRef(new Animated.Value(0)).current;
-
     useEffect(() => {
         if (!isLoaded) return;
         setAvatarUri(settings.avatarUri);
@@ -69,17 +63,10 @@ export default function ProfileScreen() {
         setNoiseLevel(settings.noiseLevel);
         setRadius(settings.radius);
         setWorkMode(settings.workMode);
-        slideAnim.setValue(settings.workMode === 'group' ? 1 : 0);
         setSelectedUtilities(settings.utilities);
         setUnit(settings.unit);
         setLanguage(settings.language);
-    }, [isLoaded, settings, slideAnim]);
-
-    const knobWidth = toggleWidth > 0 ? toggleWidth / 2 - KNOB_MARGIN * 2 : 0;
-    const knobTranslateX = slideAnim.interpolate({
-        inputRange: [0, 1],
-        outputRange: [KNOB_MARGIN, Math.max(toggleWidth - knobWidth - KNOB_MARGIN, KNOB_MARGIN)],
-    });
+    }, [isLoaded, settings]);
 
     const togglePreferences = () => {
         LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -90,16 +77,6 @@ export default function ProfileScreen() {
         setSelectedUtilities((prev) =>
             prev.includes(utility) ? prev.filter((u) => u !== utility) : [...prev, utility]
         );
-    };
-
-    const toggleWorkMode = () => {
-        const next: WorkMode = workMode === 'solo' ? 'group' : 'solo';
-        setWorkMode(next);
-        Animated.timing(slideAnim, {
-            toValue: next === 'group' ? 1 : 0,
-            duration: 200,
-            useNativeDriver: true,
-        }).start();
     };
 
     const pickAvatar = async () => {
@@ -264,21 +241,17 @@ export default function ProfileScreen() {
                         />
 
                         <Text style={styles.fieldLabel}>Work Mode</Text>
-                        <Pressable
-                            onPress={toggleWorkMode}
-                            onLayout={(e) => setToggleWidth(e.nativeEvent.layout.width)}
-                            style={styles.toggleButton}
-                        >
-                            <Animated.View
-                                style={[
-                                    styles.toggleKnob,
-                                    { width: knobWidth, height: TOGGLE_HEIGHT - KNOB_MARGIN * 2, transform: [{ translateX: knobTranslateX }] },
-                                ]}
+                        <View style={styles.workModeRow}>
+                            <View style={styles.workModeTextWrapper}>
+                                <Text style={styles.workModeLabel}>Group Work</Text>
+                            </View>
+                            <Switch
+                                value={workMode === 'group'}
+                                onValueChange={(value) => setWorkMode(value ? 'group' : 'solo')}
+                                trackColor={{ false: '#ccc', true: Colors.primary }}
+                                thumbColor="#fff"
                             />
-                            <Text style={styles.toggleLabel}>
-                                {workMode === 'solo' ? 'Solo Work' : 'Group Work'}
-                            </Text>
-                        </Pressable>
+                        </View>
 
                         <Text style={styles.fieldLabel}>Utilities</Text>
                         <View style={styles.chipsContainer}>
@@ -536,26 +509,19 @@ const styles = StyleSheet.create({
         flexWrap: 'wrap',
         gap: 8,
     },
-    toggleButton: {
-        height: TOGGLE_HEIGHT,
-        borderRadius: TOGGLE_HEIGHT / 2,
-        backgroundColor: '#90CAF9',
-        justifyContent: 'center',
+    workModeRow: {
+        flexDirection: 'row',
         alignItems: 'center',
-        overflow: 'hidden',
-        width: '100%',
+        justifyContent: 'space-between',
     },
-    toggleKnob: {
-        position: 'absolute',
-        top: KNOB_MARGIN,
-        left: 0,
-        borderRadius: (TOGGLE_HEIGHT - KNOB_MARGIN * 2) / 2,
-        backgroundColor: '#1E88E5',
+    workModeTextWrapper: {
+        flex: 1,
+        marginRight: 12,
     },
-    toggleLabel: {
-        color: 'white',
-        fontSize: 16,
-        fontWeight: '700',
+    workModeLabel: {
+        ...Typography.body,
+        fontWeight: '600',
+        color: Colors.textPrimary,
     },
     chipsContainer: {
         flexDirection: 'row',

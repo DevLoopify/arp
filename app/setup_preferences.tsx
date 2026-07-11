@@ -10,14 +10,11 @@ import { NoiseLevel, useUserProfile, WorkMode } from '@/context/UserProfileConte
 import { Ionicons } from '@expo/vector-icons';
 import Slider from '@react-native-community/slider';
 import { router } from 'expo-router';
-import { useRef, useState } from 'react';
-import { Alert, Animated, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
+import { Alert, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 
 const UTILITIES = Object.keys(utilityIcons);
 const NOISE_LEVELS: NoiseLevel[] = [1, 2, 3, 4, 5];
-
-const TOGGLE_HEIGHT = 50;
-const KNOB_MARGIN = 4;
 
 export default function SetupPreferencesScreen() {
     const { settings, saveSettings } = useUserProfile();
@@ -28,29 +25,11 @@ export default function SetupPreferencesScreen() {
     const [workMode, setWorkMode] = useState<WorkMode>(settings.workMode);
     const [selectedUtilities, setSelectedUtilities] = useState<string[]>(settings.utilities);
     const [isSaving, setIsSaving] = useState(false);
-    const [toggleWidth, setToggleWidth] = useState(0);
-    const slideAnim = useRef(new Animated.Value(settings.workMode === 'group' ? 1 : 0)).current;
-
-    const knobWidth = toggleWidth > 0 ? toggleWidth / 2 - KNOB_MARGIN * 2 : 0;
-    const knobTranslateX = slideAnim.interpolate({
-        inputRange: [0, 1],
-        outputRange: [KNOB_MARGIN, Math.max(toggleWidth - knobWidth - KNOB_MARGIN, KNOB_MARGIN)],
-    });
 
     const toggleUtility = (utility: string) => {
         setSelectedUtilities((prev) =>
             prev.includes(utility) ? prev.filter((u) => u !== utility) : [...prev, utility]
         );
-    };
-
-    const toggleWorkMode = () => {
-        const next: WorkMode = workMode === 'solo' ? 'group' : 'solo';
-        setWorkMode(next);
-        Animated.timing(slideAnim, {
-            toValue: next === 'group' ? 1 : 0,
-            duration: 200,
-            useNativeDriver: true,
-        }).start();
     };
 
     const finish = () => router.replace('/(tabs)/explore');
@@ -124,23 +103,17 @@ export default function SetupPreferencesScreen() {
             />
 
             <Text style={styles.fieldLabel}>Work Mode</Text>
-            <Pressable
-                onPress={toggleWorkMode}
-                onLayout={(e) => setToggleWidth(e.nativeEvent.layout.width)}
-                style={styles.toggleButton}
-            >
-                <Animated.View
-                    style={[
-                        styles.toggleKnob,
-                        {
-                            width: knobWidth,
-                            height: TOGGLE_HEIGHT - KNOB_MARGIN * 2,
-                            transform: [{ translateX: knobTranslateX }],
-                        },
-                    ]}
+            <View style={styles.workModeRow}>
+                <View style={styles.workModeTextWrapper}>
+                    <Text style={styles.workModeLabel}>Group Work</Text>
+                </View>
+                <Switch
+                    value={workMode === 'group'}
+                    onValueChange={(value) => setWorkMode(value ? 'group' : 'solo')}
+                    trackColor={{ false: '#ccc', true: Colors.primary }}
+                    thumbColor="#fff"
                 />
-                <Text style={styles.toggleLabel}>{workMode === 'solo' ? 'Solo Work' : 'Group Work'}</Text>
-            </Pressable>
+            </View>
 
             <View style={styles.fieldLabelRow}>
                 <Text style={styles.fieldLabel}>Utilities</Text>
@@ -225,26 +198,19 @@ const styles = StyleSheet.create({
         width: '100%',
         height: 40,
     },
-    toggleButton: {
-        height: TOGGLE_HEIGHT,
-        borderRadius: TOGGLE_HEIGHT / 2,
-        backgroundColor: '#90CAF9',
-        justifyContent: 'center',
+    workModeRow: {
+        flexDirection: 'row',
         alignItems: 'center',
-        overflow: 'hidden',
-        width: '100%',
+        justifyContent: 'space-between',
     },
-    toggleKnob: {
-        position: 'absolute',
-        top: KNOB_MARGIN,
-        left: 0,
-        borderRadius: (TOGGLE_HEIGHT - KNOB_MARGIN * 2) / 2,
-        backgroundColor: '#1E88E5',
+    workModeTextWrapper: {
+        flex: 1,
+        marginRight: 12,
     },
-    toggleLabel: {
-        color: 'white',
-        fontSize: 16,
-        fontWeight: '700',
+    workModeLabel: {
+        ...Typography.body,
+        fontWeight: '600',
+        color: Colors.textPrimary,
     },
     chipsContainer: {
         flexDirection: 'row',
