@@ -23,6 +23,7 @@ export default function FilterPopup({ visible, onClose }) {
     const [groupWorkOnly, setGroupWorkOnly] = useState(false)
     const [selectedUtilities, setSelectedUtilities] = useState([])
     const [showAppliedToast, setShowAppliedToast] = useState(false)
+    const [radiusSliderKey, setRadiusSliderKey] = useState(0)
     const { location: gpsLocation, permissionGranted } = useCurrentLocation()
     const { searchLocation } = useSearchLocation()
     const location = searchLocation ?? gpsLocation
@@ -35,6 +36,10 @@ export default function FilterPopup({ visible, onClose }) {
         setRadius(filters.radiusMeters ?? defaultFilters.radiusMeters ?? 500)
         setSelectedUtilities(filters.utilities)
         setGroupWorkOnly(filters.groupWorkOnly ?? profileSettings.workMode === 'group')
+        // Slider only picks up value changes made through user drag; force a
+        // remount whenever we set the radius programmatically so the thumb
+        // doesn't stay stuck at its previous position.
+        setRadiusSliderKey((key) => key + 1)
     }, [visible])
     const panResponder = useRef(
     PanResponder.create({
@@ -57,6 +62,7 @@ export default function FilterPopup({ visible, onClose }) {
         setRadius(defaultFilters.radiusMeters ?? 500)
         setSelectedUtilities(defaultFilters.utilities)
         setGroupWorkOnly(defaultFilters.groupWorkOnly)
+        setRadiusSliderKey((key) => key + 1)
         resetFilters()
     }
 
@@ -119,6 +125,7 @@ export default function FilterPopup({ visible, onClose }) {
                   </View>
                   <View style={styles.sliderContainer}>
                     <Slider
+                      key={radiusSliderKey}
                       style={styles.slider}
                       minimumValue={100}
                       maximumValue={5000}

@@ -56,13 +56,12 @@ export default function RegisterScreen() {
                     keyboardType="email-address"
                 />
                 <InputField
-                    label="Password"
+                    label="Password (min. 8 characters)"
                     value={password}
                     onChangeText={setPassword}
                     secureTextEntry={true}
                     keyboardType="default"
                 />
-                <Text style={authStyles.hint}>Must be at least 8 characters long.</Text>
                 <InputField
                     label="Confirm Password"
                     value={confirmPassword}

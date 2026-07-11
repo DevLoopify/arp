@@ -67,7 +67,9 @@ export default function CheckUpScreen() {
                 <View style={styles.section}>
                     <View style={styles.sliderHeader}>
                         <Text style={styles.sectionTitle}>Noise Level</Text>
-                        <Text style={styles.sliderValue}>{NOISE_LABELS[noiseLevel]}</Text>
+                        <Text style={styles.sliderValue}>
+                            {NOISE_LABELS[noiseLevel]} ({noiseLevel}/5)
+                        </Text>
                     </View>
                     <Slider
                         style={styles.slider}

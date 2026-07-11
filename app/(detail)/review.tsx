@@ -15,7 +15,7 @@ export default function ReviewScreen() {
   const [editingReview] = useState<Review | null>(() => (review ? (JSON.parse(review) as Review) : null));
   const isEditMode = editingReview != null;
 
-  const [rating, setRating] = useState(editingReview?.rating ?? 4);
+  const [rating, setRating] = useState(editingReview?.rating ?? 3);
   const [comment, setComment] = useState(editingReview?.comment ?? '');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);

@@ -39,11 +39,6 @@ const authStyles = StyleSheet.create({
         ...Typography.caption,
         color: Colors.textSecondary,
     },
-    hint: {
-        ...Typography.caption,
-        color: Colors.textMuted,
-        marginTop: -6,
-    },
     registerLink: {
         ...Typography.link,
         color: Colors.primary,

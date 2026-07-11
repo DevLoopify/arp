@@ -15,6 +15,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useWorkplaces } from "@/context/WorkplacesContext";
 import { getAvatarUri } from "@/utils/avatar";
 import { getLastUpdatedLabel } from "@/utils/lastUpdated";
+import { getOpeningStatus } from "@/utils/openingHours";
 import { resolveImage } from "@/utils/resolveImage";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { router, useLocalSearchParams } from 'expo-router';
@@ -23,6 +24,12 @@ import { Alert, Dimensions, Linking, Modal, Pressable, ScrollView, Share, StyleS
 
 const screenWidth = Dimensions.get('window').width;
 const screenHeight = Dimensions.get('window').height;
+
+const WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+// Placeholder hours shown until workplaces have real ones on record.
+const MOCK_OPENS_AT = '09:00';
+const MOCK_CLOSES_AT = '18:00';
 
 export default function DetailScreen(){
     const { workplace, reviewSubmitted } = useLocalSearchParams<{ workplace: string; reviewSubmitted?: string }>();
@@ -43,6 +50,11 @@ export default function DetailScreen(){
     const liveCrowdedness = parsedWorkplace.crowdByHourToday?.[currentHour] ?? crowdedness;
     const crowdLevel = crowdLevels[liveCrowdedness];
     const lastUpdatedLabel = getLastUpdatedLabel();
+    const hasRealHours = Boolean(parsedWorkplace.opensAt && parsedWorkplace.closesAt);
+    const opensAt = parsedWorkplace.opensAt ?? MOCK_OPENS_AT;
+    const closesAt = parsedWorkplace.closesAt ?? MOCK_CLOSES_AT;
+    const openingStatus = getOpeningStatus(opensAt, closesAt);
+    const todayIndex = (new Date().getDay() + 6) % 7; // Mon = 0 ... Sun = 6
     const handleShare = () => {
         const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${parsedWorkplace.latitude},${parsedWorkplace.longitude}`;
         Share.share({
@@ -133,6 +145,28 @@ export default function DetailScreen(){
                     today={parsedWorkplace.crowdByHourToday}
                     currentHour={currentHour}
                 />
+            </View>
+            <View style={styles.section}>
+                <View style={styles.openingHoursHeader}>
+                    <Text style={styles.sectionHeading}>Opening Hours</Text>
+                    {openingStatus && (
+                        <Text style={[styles.openingStatusText, openingStatus.isOpen ? styles.openingStatusOpen : styles.openingStatusClosed]}>
+                            {openingStatus.label}
+                        </Text>
+                    )}
+                </View>
+                <View style={[styles.openingHoursList, styles.utilitiesSpacing]}>
+                    {WEEKDAYS.map((day, index) => (
+                        <View key={day} style={styles.openingHoursRow}>
+                            <Text style={[styles.openingHoursDay, index === todayIndex && styles.openingHoursTextToday]}>
+                                {day}
+                            </Text>
+                            <Text style={[styles.openingHoursTime, index === todayIndex && styles.openingHoursTextToday]}>
+                                {opensAt} – {closesAt}
+                            </Text>
+                        </View>
+                    ))}
+                </View>
             </View>
             <View style={styles.section}>
                 <Text style={styles.sectionHeading}>Reviews</Text>
@@ -265,6 +299,49 @@ const styles = StyleSheet.create({
         fontWeight: '700',
         color: Colors.textPrimary,
         paddingHorizontal: 16,
+    },
+    openingHoursHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingRight: 16,
+    },
+    openingStatusText: {
+        ...Typography.caption,
+        fontSize: 12,
+        fontWeight: '600',
+    },
+    openingStatusOpen: {
+        color: '#2E7D32',
+    },
+    openingStatusClosed: {
+        color: Colors.live,
+    },
+    openingHoursNote: {
+        ...Typography.caption,
+        fontSize: 12,
+        color: Colors.textMuted,
+        fontStyle: 'italic',
+    },
+    openingHoursList: {
+        gap: 6,
+    },
+    openingHoursRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    openingHoursDay: {
+        ...Typography.caption,
+        color: Colors.textSecondary,
+    },
+    openingHoursTime: {
+        ...Typography.caption,
+        color: Colors.textSecondary,
+    },
+    openingHoursTextToday: {
+        color: Colors.textPrimary,
+        fontWeight: '700',
     },
     reviewsRow: {
         gap: 12,

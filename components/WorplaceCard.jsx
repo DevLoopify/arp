@@ -20,6 +20,10 @@ import SelectionChip from './SelectionChip';
 
 const MAX_VISIBLE_UTILITIES = 3;
 
+// Placeholder hours shown until workplaces have real ones on record.
+const MOCK_OPENS_AT = '09:00';
+const MOCK_CLOSES_AT = '18:00';
+
 export default function WorkplaceCard({ workplace, userLocation = null, highlighted = false }) {
     const { title, description, images, rating, noise, crowdedness, crowdByHourToday, utilities, latitude, longitude, opensAt, closesAt } = workplace;
     const { user } = useAuth();
@@ -28,7 +32,7 @@ export default function WorkplaceCard({ workplace, userLocation = null, highligh
     const resolvedImages = images.map(resolveImage).filter(Boolean);
     const liveCrowdedness = crowdByHourToday?.[new Date().getHours()] ?? crowdedness;
     const crowdLevel = crowdLevels[liveCrowdedness];
-    const openingStatus = getOpeningStatus(opensAt, closesAt);
+    const openingStatus = getOpeningStatus(opensAt ?? MOCK_OPENS_AT, closesAt ?? MOCK_CLOSES_AT);
     const lastUpdatedLabel = getLastUpdatedLabel();
     const distanceLabel = userLocation
         ? formatDistance(getDistanceKm(userLocation, { latitude, longitude }))
@@ -119,11 +123,6 @@ export default function WorkplaceCard({ workplace, userLocation = null, highligh
                                 <Ionicons name="star" size={16} color="#FFD700" />
                                 <Text style={workplaceMetaStyles.metaText}>{rating.toFixed(1)}</Text>
                             </View>
-                            {openingStatus && (
-                                <Text style={[styles.openingStatusText, openingStatus.isOpen ? styles.openingStatusOpen : styles.openingStatusClosed]}>
-                                    {openingStatus.label}
-                                </Text>
-                            )}
                         </View>
                     </View>
                     <Text style={styles.description} numberOfLines={2}>{description}</Text>
@@ -165,6 +164,9 @@ export default function WorkplaceCard({ workplace, userLocation = null, highligh
                                 </View>
                             )}
                         </View>
+                        {openingStatus && (
+                            <Text style={styles.openingStatusMuted} numberOfLines={1}>{openingStatus.label}</Text>
+                        )}
                     </View>
                 </View>
             </Pressable>
@@ -239,17 +241,6 @@ const styles = StyleSheet.create({
         alignItems: 'flex-end',
         gap: 2,
     },
-    openingStatusText: {
-        ...Typography.caption,
-        fontSize: 11,
-        fontWeight: '600',
-    },
-    openingStatusOpen: {
-        color: '#2E7D32',
-    },
-    openingStatusClosed: {
-        color: Colors.live,
-    },
     description: {
         ...Typography.caption,
         color: Colors.textSecondary,
@@ -257,8 +248,16 @@ const styles = StyleSheet.create({
     metaRow: {
         flexDirection: 'row',
         alignItems: 'center',
+        justifyContent: 'space-between',
         gap: 8,
         marginTop: 4,
+    },
+    openingStatusMuted: {
+        ...Typography.caption,
+        fontSize: 11,
+        color: Colors.textMuted,
+        flexShrink: 1,
+        textAlign: 'right',
     },
     liveIndicatorGroup: {
         gap: 2,

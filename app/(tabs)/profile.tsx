@@ -10,7 +10,7 @@ import { Ionicons } from '@expo/vector-icons';
 import Slider from '@react-native-community/slider';
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import { Alert, Image, LayoutAnimation, Modal, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, UIManager, View,} from 'react-native';
 import InputField from '@/components/InputField';
 import SelectionChip from '@/components/SelectionChip';
@@ -46,6 +46,8 @@ export default function ProfileScreen() {
     const [name, setName] = useState('');
 
     const [preferencesExpanded, setPreferencesExpanded] = useState(false);
+    const [workplacesExpanded, setWorkplacesExpanded] = useState(false);
+    const [reviewsExpanded, setReviewsExpanded] = useState(false);
     const [noiseLevel, setNoiseLevel] = useState<NoiseLevel>(3);
     const [radius, setRadius] = useState(500);
     const [workMode, setWorkMode] = useState<WorkMode>('solo');
@@ -68,9 +70,9 @@ export default function ProfileScreen() {
         setLanguage(settings.language);
     }, [isLoaded, settings]);
 
-    const togglePreferences = () => {
+    const toggleSection = (setExpanded: Dispatch<SetStateAction<boolean>>) => {
         LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-        setPreferencesExpanded((prev) => !prev);
+        setExpanded((prev) => !prev);
     };
 
     const toggleUtility = (utility: string) => {
@@ -200,7 +202,7 @@ export default function ProfileScreen() {
             </View>
 
             <View style={styles.section}>
-                <Pressable style={styles.sectionHeader} onPress={togglePreferences}>
+                <Pressable style={styles.sectionHeader} onPress={() => toggleSection(setPreferencesExpanded)}>
                     <Text style={styles.sectionTitle}>Workspace Preferences</Text>
                     <Ionicons
                         name={preferencesExpanded ? 'chevron-up' : 'chevron-down'}
@@ -229,6 +231,7 @@ export default function ProfileScreen() {
                             <Text style={styles.radiusValue}>{radius} m</Text>
                         </View>
                         <Slider
+                            key={isLoaded ? 'loaded' : 'loading'}
                             style={styles.slider}
                             minimumValue={100}
                             maximumValue={5000}
@@ -276,6 +279,97 @@ export default function ProfileScreen() {
             </View>
 
             <View style={styles.section}>
+                <Pressable style={styles.sectionHeader} onPress={() => toggleSection(setWorkplacesExpanded)}>
+                    <Text style={styles.sectionTitle}>Created Workplaces</Text>
+                    <Ionicons
+                        name={workplacesExpanded ? 'chevron-up' : 'chevron-down'}
+                        size={20}
+                        color={Colors.textPrimary}
+                    />
+                </Pressable>
+
+                {workplacesExpanded && (
+                    <View style={styles.sectionBody}>
+                        {myWorkplaces.length === 0 ? (
+                            <Text style={styles.emptyListText}>You haven&apos;t added any workplaces yet.</Text>
+                        ) : (
+                            myWorkplaces.map((wp) => (
+                                <Pressable key={wp.id} style={styles.listRow} onPress={() => handleViewWorkplace(wp)}>
+                                    <Text style={styles.listRowTitle} numberOfLines={1}>{wp.title}</Text>
+                                    <View style={styles.listRowActions}>
+                                        <Pressable style={styles.listRowIcon} onPress={() => handleEditWorkplace(wp)} hitSlop={8}>
+                                            <Ionicons name="pencil" size={18} color={Colors.primary} />
+                                        </Pressable>
+                                        <Pressable style={styles.listRowIcon} onPress={() => handleDeleteWorkplace(wp)} hitSlop={8}>
+                                            <Ionicons name="trash-outline" size={18} color={Colors.live} />
+                                        </Pressable>
+                                    </View>
+                                </Pressable>
+                            ))
+                        )}
+                    </View>
+                )}
+            </View>
+
+            <View style={styles.section}>
+                <Pressable style={styles.sectionHeader} onPress={() => toggleSection(setReviewsExpanded)}>
+                    <Text style={styles.sectionTitle}>Created Reviews</Text>
+                    <Ionicons
+                        name={reviewsExpanded ? 'chevron-up' : 'chevron-down'}
+                        size={20}
+                        color={Colors.textPrimary}
+                    />
+                </Pressable>
+
+                {reviewsExpanded && (
+                    <View style={styles.sectionBody}>
+                        {myReviews.length === 0 ? (
+                            <Text style={styles.emptyListText}>You haven&apos;t written any reviews yet.</Text>
+                        ) : (
+                            myReviews.map((review) => (
+                                <Pressable
+                                    key={review.id}
+                                    style={styles.listRow}
+                                    onPress={() => handleViewWorkplace(review.workplace)}
+                                >
+                                    <View style={styles.reviewRowContent}>
+                                        <Text style={styles.listRowTitle} numberOfLines={1}>{review.workplace.title}</Text>
+                                        <View style={styles.reviewStars}>
+                                            {[1, 2, 3, 4, 5].map((star) => (
+                                                <Ionicons
+                                                    key={star}
+                                                    name={star <= review.rating ? 'star' : 'star-outline'}
+                                                    size={12}
+                                                    color="#FFD700"
+                                                />
+                                            ))}
+                                        </View>
+                                        <Text style={styles.reviewComment} numberOfLines={2}>{review.comment}</Text>
+                                    </View>
+                                    <View style={styles.listRowActions}>
+                                        <Pressable
+                                            style={styles.listRowIcon}
+                                            onPress={() => handleEditReview(review.workplace, review)}
+                                            hitSlop={8}
+                                        >
+                                            <Ionicons name="pencil" size={18} color={Colors.primary} />
+                                        </Pressable>
+                                        <Pressable
+                                            style={styles.listRowIcon}
+                                            onPress={() => handleDeleteReview(review)}
+                                            hitSlop={8}
+                                        >
+                                            <Ionicons name="trash-outline" size={18} color={Colors.live} />
+                                        </Pressable>
+                                    </View>
+                                </Pressable>
+                            ))
+                        )}
+                    </View>
+                )}
+            </View>
+
+            <View style={styles.section}>
                 <Text style={styles.sectionTitle}>App Settings</Text>
                 <View style={styles.sectionBody}>
                     <Text style={styles.fieldLabel}>Distance Unit</Text>
@@ -291,77 +385,6 @@ export default function ProfileScreen() {
                         value={language}
                         onChange={(value) => setLanguage(value as Language)}
                     />
-                </View>
-            </View>
-
-            <View style={styles.section}>
-                <Text style={styles.sectionTitle}>My Workplaces</Text>
-                <View style={styles.sectionBody}>
-                    {myWorkplaces.length === 0 ? (
-                        <Text style={styles.emptyListText}>You haven&apos;t added any workplaces yet.</Text>
-                    ) : (
-                        myWorkplaces.map((wp) => (
-                            <Pressable key={wp.id} style={styles.listRow} onPress={() => handleViewWorkplace(wp)}>
-                                <Text style={styles.listRowTitle} numberOfLines={1}>{wp.title}</Text>
-                                <View style={styles.listRowActions}>
-                                    <Pressable style={styles.listRowIcon} onPress={() => handleEditWorkplace(wp)} hitSlop={8}>
-                                        <Ionicons name="pencil" size={18} color={Colors.primary} />
-                                    </Pressable>
-                                    <Pressable style={styles.listRowIcon} onPress={() => handleDeleteWorkplace(wp)} hitSlop={8}>
-                                        <Ionicons name="trash-outline" size={18} color={Colors.live} />
-                                    </Pressable>
-                                </View>
-                            </Pressable>
-                        ))
-                    )}
-                </View>
-            </View>
-
-            <View style={styles.section}>
-                <Text style={styles.sectionTitle}>My Reviews</Text>
-                <View style={styles.sectionBody}>
-                    {myReviews.length === 0 ? (
-                        <Text style={styles.emptyListText}>You haven&apos;t written any reviews yet.</Text>
-                    ) : (
-                        myReviews.map((review) => (
-                            <Pressable
-                                key={review.id}
-                                style={styles.listRow}
-                                onPress={() => handleViewWorkplace(review.workplace)}
-                            >
-                                <View style={styles.reviewRowContent}>
-                                    <Text style={styles.listRowTitle} numberOfLines={1}>{review.workplace.title}</Text>
-                                    <View style={styles.reviewStars}>
-                                        {[1, 2, 3, 4, 5].map((star) => (
-                                            <Ionicons
-                                                key={star}
-                                                name={star <= review.rating ? 'star' : 'star-outline'}
-                                                size={12}
-                                                color="#FFD700"
-                                            />
-                                        ))}
-                                    </View>
-                                    <Text style={styles.reviewComment} numberOfLines={2}>{review.comment}</Text>
-                                </View>
-                                <View style={styles.listRowActions}>
-                                    <Pressable
-                                        style={styles.listRowIcon}
-                                        onPress={() => handleEditReview(review.workplace, review)}
-                                        hitSlop={8}
-                                    >
-                                        <Ionicons name="pencil" size={18} color={Colors.primary} />
-                                    </Pressable>
-                                    <Pressable
-                                        style={styles.listRowIcon}
-                                        onPress={() => handleDeleteReview(review)}
-                                        hitSlop={8}
-                                    >
-                                        <Ionicons name="trash-outline" size={18} color={Colors.live} />
-                                    </Pressable>
-                                </View>
-                            </Pressable>
-                        ))
-                    )}
                 </View>
             </View>
 
