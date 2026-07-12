@@ -7,7 +7,6 @@ type Config struct {
 	DatabaseURL string
 	JWTSecret   string
 	UploadDir   string
-	SeedFile    string
 }
 
 func Load() Config {
@@ -16,7 +15,6 @@ func Load() Config {
 		DatabaseURL: getEnv("DATABASE_URL", "postgres://arp:arp@localhost:5432/arp?sslmode=disable"),
 		JWTSecret:   getEnv("JWT_SECRET", "blah-blah"),
 		UploadDir:   getEnv("UPLOAD_DIR", "./uploads"),
-		SeedFile:    getEnv("SEED_FILE", "./data/worplaces.json"),
 	}
 }
 

@@ -29,10 +29,6 @@ func main() {
 	authManager := auth.NewManager(cfg.JWTSecret)
 	server := handlers.New(pool, authManager, cfg.UploadDir)
 
-	if err := database.SeedIfEmpty(ctx, pool, cfg.SeedFile); err != nil {
-		log.Printf("seed skipped: %v", err)
-	}
-
 	log.Printf("listening on :%s", cfg.Port)
 	if err := http.ListenAndServe(":"+cfg.Port, server.Router()); err != nil {
 		log.Fatalf("server error: %v", err)
