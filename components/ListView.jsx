@@ -1,12 +1,15 @@
 import Colors from '@/constants/Colors';
 import Typography from '@/constants/Typography';
 import { useFilters } from '@/context/FiltersContext';
+import { useRoulette } from '@/context/RouletteContext';
 import { useWorkplaces } from '@/context/WorkplacesContext';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
-import React, { useCallback, useEffect, useMemo, useRef } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { applyFilters } from '../utils/applyFilters';
 import { getDistanceKm } from '../utils/geo';
+import RouletteWheel from './RouletteWheel';
 import WorkplaceCard from './WorplaceCard';
 
 const ListView = ({
@@ -20,6 +23,13 @@ const ListView = ({
 
   const { workplaces } = useWorkplaces();
   const { filters } = useFilters();
+  const { rouletteIds } = useRoulette();
+  const [wheelVisible, setWheelVisible] = useState(false);
+
+  const rouletteWorkplaces = useMemo(
+    () => workplaces.filter((workplace) => rouletteIds.has(workplace.id)),
+    [workplaces, rouletteIds]
+  );
 
   const snapPoints = useMemo(() => ['25%', '50%', '100%'], []);
 
@@ -92,7 +102,20 @@ const ListView = ({
         <BottomSheetScrollView
           ref={scrollRef}
           contentContainerStyle={styles.contentContainer}
+          stickyHeaderIndices={[0]}
         >
+          <View style={styles.rouletteBarSticky}>
+            <Pressable
+              style={styles.rouletteBarButton}
+              onPress={() => setWheelVisible(true)}
+            >
+              <Ionicons name="dice" size={18} color={Colors.textWhite} />
+              <Text style={styles.rouletteBarText}>
+                Spin the Wheel{rouletteWorkplaces.length > 0 ? ` (${rouletteWorkplaces.length})` : ''}
+              </Text>
+            </Pressable>
+          </View>
+
           {sortedWorkplaces.length > 0 ? (
             sortedWorkplaces.map((workplace) => (
               <WorkplaceCard
@@ -113,6 +136,12 @@ const ListView = ({
           )}
         </BottomSheetScrollView>
       </BottomSheet>
+
+      <RouletteWheel
+        visible={wheelVisible}
+        onClose={() => setWheelVisible(false)}
+        workplaces={rouletteWorkplaces}
+      />
     </View>
   );
 };
@@ -124,6 +153,25 @@ const styles = StyleSheet.create({
   contentContainer: {
     backgroundColor: 'white',
     padding: 12,
+  },
+  rouletteBarSticky: {
+    backgroundColor: 'white',
+    paddingBottom: 16,
+  },
+  rouletteBarButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    alignSelf: 'center',
+    backgroundColor: Colors.primary,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 24,
+  },
+  rouletteBarText: {
+    ...Typography.button,
+    color: Colors.textWhite,
   },
   emptyState: {
     alignItems: 'center',

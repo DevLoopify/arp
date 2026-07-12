@@ -16,6 +16,7 @@ import { useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import FavouriteButton from './FavouriteButton';
 import ImageCarousel from './ImageCarousel';
+import RouletteButton from './RouletteButton';
 import SelectionChip from './SelectionChip';
 
 const MAX_VISIBLE_UTILITIES = 3;
@@ -102,6 +103,9 @@ export default function WorkplaceCard({ workplace, userLocation = null, highligh
                     ))}
                     <View style={styles.favouriteButtonPosition}>
                         <FavouriteButton workplaceId={workplace.id} />
+                    </View>
+                    <View style={styles.rouletteButtonPosition}>
+                        <RouletteButton workplaceId={workplace.id} />
                     </View>
                     {isOwner && (
                         <View style={styles.editButtonPosition}>
@@ -202,6 +206,11 @@ const styles = StyleSheet.create({
     favouriteButtonPosition: {
         position: 'absolute',
         top: 12,
+        right: 12,
+    },
+    rouletteButtonPosition: {
+        position: 'absolute',
+        top: 60,
         right: 12,
     },
     editButtonPosition: {

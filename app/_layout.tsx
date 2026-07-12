@@ -2,6 +2,7 @@ import NotificationBanner from '@/components/NotificationBanner';
 import { AuthProvider } from '@/context/AuthContext';
 import { FavouritesProvider } from '@/context/FavouritesContext';
 import { FiltersProvider } from '@/context/FiltersContext';
+import { RouletteProvider } from '@/context/RouletteContext';
 import { SearchLocationProvider } from '@/context/SearchLocationContext';
 import { UserProfileProvider } from '@/context/UserProfileContext';
 import { WorkplacesProvider } from '@/context/WorkplacesContext';
@@ -14,16 +15,18 @@ export default function RootLayout() {
       <AuthProvider>
         <WorkplacesProvider>
           <FavouritesProvider>
-            <UserProfileProvider>
-              <FiltersProvider>
-                <SearchLocationProvider>
-                  <Stack screenOptions={{ headerShown: false }}
-                  initialRouteName="login">
-                  </Stack>
-                  <NotificationBanner />
-                </SearchLocationProvider>
-              </FiltersProvider>
-            </UserProfileProvider>
+            <RouletteProvider>
+              <UserProfileProvider>
+                <FiltersProvider>
+                  <SearchLocationProvider>
+                    <Stack screenOptions={{ headerShown: false }}
+                    initialRouteName="login">
+                    </Stack>
+                    <NotificationBanner />
+                  </SearchLocationProvider>
+                </FiltersProvider>
+              </UserProfileProvider>
+            </RouletteProvider>
           </FavouritesProvider>
         </WorkplacesProvider>
       </AuthProvider>
