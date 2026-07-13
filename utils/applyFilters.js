@@ -1,31 +1,49 @@
 import { getDistanceKm } from './geo';
 
 function matchesNoise(workplace, noiseLevel) {
-    if (!noiseLevel) return true;
+    const noNoiseFilterSet = !noiseLevel;
+    if (noNoiseFilterSet) {
+        return true;
+    }
+
     return workplace.noise <= noiseLevel;
 }
 
 function matchesUtilities(workplace, utilities) {
-    if (!utilities?.length) return true;
+    const noUtilitiesFilterSet = !utilities?.length;
+    if (noUtilitiesFilterSet) {
+        return true;
+    }
+
     return utilities.every((utility) => workplace.utilities?.includes(utility));
 }
 
 function matchesRadius(workplace, userLocation, radiusMeters) {
-    if (!radiusMeters || !userLocation) return true;
-    return getDistanceKm(userLocation, workplace) * 1000 <= radiusMeters;
+    const noRadiusFilterSet = !radiusMeters || !userLocation;
+    if (noRadiusFilterSet) {
+        return true;
+    }
+
+    const distanceMeters = getDistanceKm(userLocation, workplace) * 1000;
+    return distanceMeters <= radiusMeters;
 }
 
 function matchesWorkMode(workplace, groupWorkOnly) {
-    if (!groupWorkOnly) return true;
+    const noWorkModeFilterSet = !groupWorkOnly;
+    if (noWorkModeFilterSet) {
+        return true;
+    }
+
     return workplace.workMode === 'group' || workplace.workMode === 'both';
 }
 
 export function applyFilters(workplaces, filters, userLocation) {
-    return workplaces.filter(
-        (workplace) =>
-            matchesNoise(workplace, filters.noiseLevel) &&
-            matchesUtilities(workplace, filters.utilities) &&
-            matchesRadius(workplace, userLocation, filters.radiusMeters) &&
-            matchesWorkMode(workplace, filters.groupWorkOnly)
-    );
+    return workplaces.filter((workplace) => {
+        const noiseMatches = matchesNoise(workplace, filters.noiseLevel);
+        const utilitiesMatch = matchesUtilities(workplace, filters.utilities);
+        const radiusMatches = matchesRadius(workplace, userLocation, filters.radiusMeters);
+        const workModeMatches = matchesWorkMode(workplace, filters.groupWorkOnly);
+
+        return noiseMatches && utilitiesMatch && radiusMatches && workModeMatches;
+    });
 }

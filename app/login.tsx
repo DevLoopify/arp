@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
-import { Alert, View, Text } from 'react-native';
-import InputField from '../components/InputField';
 import PrimaryButton from '@/components/PrimaryButton';
 import TextButton from '@/components/TextButton';
-import { Link, router } from 'expo-router';
 import authStyles from '@/constants/authStyles';
 import { useAuth } from '@/context/AuthContext';
 import { ApiError } from '@/utils/api';
+import { Link, router } from 'expo-router';
+import React, { useState } from 'react';
+import { Alert, Text, View } from 'react-native';
+import InputField from '../components/InputField';
 
 export default function LoginScreen() {
     const [email, setEmail] = useState('');

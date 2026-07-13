@@ -1,7 +1,6 @@
-import InfoTooltip from '@/components/InfoTooltip';
+import FieldLabel from '@/components/FieldLabel';
 import PrimaryButton from '@/components/PrimaryButton';
 import SelectionChip from '@/components/SelectionChip';
-import TextButton from '@/components/TextButton';
 import Colors from '@/constants/Colors';
 import Typography from '@/constants/Typography';
 import utilityIcons, { getUtilityIcon } from '@/constants/utilityIcons';
@@ -27,9 +26,15 @@ export default function SetupPreferencesScreen() {
     const [isSaving, setIsSaving] = useState(false);
 
     const toggleUtility = (utility: string) => {
-        setSelectedUtilities((prev) =>
-            prev.includes(utility) ? prev.filter((u) => u !== utility) : [...prev, utility]
-        );
+        setSelectedUtilities((prev) => {
+            const isAlreadySelected = prev.includes(utility);
+
+            if (isAlreadySelected) {
+                return prev.filter((u) => u !== utility);
+            }
+
+            return [...prev, utility];
+        });
     };
 
     const finish = () => router.replace('/(tabs)/explore');
@@ -61,13 +66,11 @@ export default function SetupPreferencesScreen() {
                 in your profile.
             </Text>
 
-            <View style={styles.fieldLabelRow}>
-                <Text style={styles.fieldLabel}>Noise Level</Text>
-                <InfoTooltip
-                    title="Noise Level"
-                    message="Shows workplaces at or below the noise level you pick, from 1 (quietest) to 5 (loudest)."
-                />
-            </View>
+            <FieldLabel
+                label="Noise Level"
+                textStyle={styles.fieldLabel}
+                tooltipMessage="Shows workplaces at or below the noise level you pick, from 1 (quietest) to 5 (loudest)."
+            />
             <View style={styles.noiseRow}>
                 {NOISE_LEVELS.map((level) => (
                     <SelectionChip
@@ -81,13 +84,11 @@ export default function SetupPreferencesScreen() {
             </View>
 
             <View style={styles.radiusHeader}>
-                <View style={styles.fieldLabelRow}>
-                    <Text style={styles.fieldLabel}>Search Radius</Text>
-                    <InfoTooltip
-                        title="Search Radius"
-                        message="Only shows workplaces within this distance from your current or searched location."
-                    />
-                </View>
+                <FieldLabel
+                    label="Search Radius"
+                    textStyle={styles.fieldLabel}
+                    tooltipMessage="Only shows workplaces within this distance from your current or searched location."
+                />
                 <Text style={styles.radiusValue}>{radius} m</Text>
             </View>
             <Slider
@@ -105,7 +106,11 @@ export default function SetupPreferencesScreen() {
             <Text style={styles.fieldLabel}>Work Mode</Text>
             <View style={styles.workModeRow}>
                 <View style={styles.workModeTextWrapper}>
-                    <Text style={styles.workModeLabel}>Group Work</Text>
+                    <FieldLabel
+                        label="Group Work"
+                        textStyle={styles.workModeLabel}
+                        tooltipMessage="Only show workplaces suitable for group work."
+                    />
                 </View>
                 <Switch
                     value={workMode === 'group'}
@@ -115,13 +120,11 @@ export default function SetupPreferencesScreen() {
                 />
             </View>
 
-            <View style={styles.fieldLabelRow}>
-                <Text style={styles.fieldLabel}>Utilities</Text>
-                <InfoTooltip
-                    title="Utilities"
-                    message="Only shows workplaces that have all of the utilities you select here."
-                />
-            </View>
+            <FieldLabel
+                label="Utilities"
+                textStyle={styles.fieldLabel}
+                tooltipMessage="Only shows workplaces that have all of the utilities you select here."
+            />
             <View style={styles.chipsContainer}>
                 {UTILITIES.map((utility) => (
                     <SelectionChip
@@ -142,9 +145,6 @@ export default function SetupPreferencesScreen() {
 
             <View style={styles.continueButton}>
                 <PrimaryButton label={isSaving ? 'Saving...' : 'Continue'} onPress={handleContinue} />
-            </View>
-            <View style={styles.skipRow}>
-                <TextButton label="Skip for now" onPress={finish} textStyle={styles.skipText} />
             </View>
         </ScrollView>
     );
@@ -174,10 +174,6 @@ const styles = StyleSheet.create({
         color: Colors.textMuted,
         marginTop: 24,
         marginBottom: 8,
-    },
-    fieldLabelRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
     },
     noiseRow: {
         flexDirection: 'row',
@@ -218,13 +214,5 @@ const styles = StyleSheet.create({
     },
     continueButton: {
         marginTop: 32,
-    },
-    skipRow: {
-        marginTop: 16,
-        alignItems: 'center',
-    },
-    skipText: {
-        ...Typography.caption,
-        color: Colors.textSecondary,
     },
 });

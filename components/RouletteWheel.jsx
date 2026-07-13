@@ -46,12 +46,27 @@ function truncateLabel(label, sliceCount) {
     return label.length > maxLength ? `${label.slice(0, maxLength - 1)}…` : label;
 }
 
+function getSpinButtonLabel(spinning, winner) {
+    if (spinning) {
+        return 'Spinning…';
+    }
+
+    if (winner) {
+        return 'Spin again';
+    }
+
+    return 'Spin';
+}
+
 export default function RouletteWheel({ visible, onClose, workplaces }) {
     const { toggleRoulette, clearRoulette } = useRoulette();
+
     const [displayItems, setDisplayItems] = useState(workplaces);
     const [spinning, setSpinning] = useState(false);
     const [winner, setWinner] = useState(null);
+
     const rotation = useSharedValue(0);
+
     const winnerItemsRef = useRef([]);
 
     useEffect(() => {
@@ -70,24 +85,32 @@ export default function RouletteWheel({ visible, onClose, workplaces }) {
         transform: [{ rotate: `${rotation.value}deg` }],
     }));
 
-    const handleSpinEnd = (finalRotation) => {
-        const items = winnerItemsRef.current;
-        const normalized = ((finalRotation % 360) + 360) % 360;
-        const anglePerSlice = 360 / items.length;
-        const localAngle = (360 - normalized) % 360;
-        const index = Math.min(items.length - 1, Math.floor(localAngle / anglePerSlice));
-        setWinner(items[index]);
-        setSpinning(false);
-    };
+const handleSpinEnd = (finalRotation) => {
+    const items = winnerItemsRef.current;
+
+    const normalized = finalRotation % 360;
+    const anglePerSlice = 360 / items.length;
+    const index = Math.floor(((360 - normalized) % 360) / anglePerSlice);
+
+    setWinner(items[index]);
+    setSpinning(false);
+};
 
     const handleWinnerPress = () => {
-        if (!winner) return;
+        if (!winner) {
+            return;
+        }
+
         onClose();
         router.push({ pathname: '/(detail)/detail', params: { workplace: JSON.stringify(winner) } });
     };
 
     const handleSpin = () => {
-        if (spinning || displayItems.length < 2) return;
+        const notEnoughItemsToSpin = displayItems.length < 2;
+        if (spinning || notEnoughItemsToSpin) {
+            return;
+        }
+
         winnerItemsRef.current = displayItems;
         setWinner(null);
         setSpinning(true);
@@ -133,6 +156,7 @@ export default function RouletteWheel({ visible, onClose, workplaces }) {
                         <>
                             <View style={styles.wheelWrapper}>
                                 <View style={styles.pointer} />
+
                                 <Animated.View style={[{ width: WHEEL_SIZE, height: WHEEL_SIZE }, animatedWheelStyle]}>
                                     <Svg width={WHEEL_SIZE} height={WHEEL_SIZE}>
                                         {displayItems.map((item, index) => {
@@ -191,7 +215,7 @@ export default function RouletteWheel({ visible, onClose, workplaces }) {
                                 disabled={spinning}
                             >
                                 <Text style={styles.spinButtonText}>
-                                    {spinning ? 'Spinning…' : winner ? 'Spin again' : 'Spin'}
+                                    {getSpinButtonLabel(spinning, winner)}
                                 </Text>
                             </Pressable>
 

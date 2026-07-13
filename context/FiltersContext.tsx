@@ -1,3 +1,4 @@
+import { useAuth } from '@/context/AuthContext';
 import { UserProfileSettings, useUserProfile } from '@/context/UserProfileContext';
 import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -37,17 +38,26 @@ const FiltersContext = createContext<FiltersContextValue | undefined>(undefined)
 
 export function FiltersProvider({ children }: { children: ReactNode }) {
     const { settings, isLoaded } = useUserProfile();
+    const { user } = useAuth();
 
     const defaultFilters: Filters = useMemo(() => filtersFromProfileSettings(settings), [settings]);
 
     const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
-    const hasAppliedProfileDefaults = useRef(false);
+    const previousUserId = useRef<number | null>(null);
 
     useEffect(() => {
-        if (!isLoaded || hasAppliedProfileDefaults.current) return;
-        hasAppliedProfileDefaults.current = true;
-        setFilters(defaultFilters);
-    }, [isLoaded, defaultFilters]);
+        if (!isLoaded) {
+            return;
+        }
+
+        const currentUserId = user?.id ?? null;
+        const justLoggedIn = currentUserId !== null && previousUserId.current === null;
+        previousUserId.current = currentUserId;
+
+        if (justLoggedIn) {
+            setFilters(defaultFilters);
+        }
+    }, [isLoaded, user, defaultFilters]);
 
     const resetFilters = useCallback(() => {
         setFilters(defaultFilters);

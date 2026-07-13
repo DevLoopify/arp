@@ -6,6 +6,25 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
+function getDetailText(selectedHour, currentHour, today, average) {
+    if (selectedHour === null) {
+        return 'Tap an hour to see details';
+    }
+
+    const hasBeenRecordedToday = selectedHour <= currentHour;
+
+    let todayLabel;
+    if (hasBeenRecordedToday) {
+        todayLabel = crowdLevels[today[selectedHour]].label;
+    } else {
+        todayLabel = 'not yet recorded';
+    }
+
+    const averageLabel = crowdLevels[average[selectedHour]].label;
+
+    return `${selectedHour}:00 — Today: ${todayLabel}, Average: ${averageLabel}`;
+}
+
 export default function CrowdChart({ average, today, currentHour = new Date().getHours() }) {
     const [selectedHour, setSelectedHour] = useState(null);
     const [width, setWidth] = useState(0);
@@ -71,9 +90,7 @@ export default function CrowdChart({ average, today, currentHour = new Date().ge
             </View>
 
             <Text style={styles.detail}>
-                {selectedHour !== null
-                    ? `${selectedHour}:00 — Today: ${selectedHour <= currentHour ? crowdLevels[today[selectedHour]].label : 'not yet recorded'}, Average: ${crowdLevels[average[selectedHour]].label}`
-                    : 'Tap an hour to see details'}
+                {getDetailText(selectedHour, currentHour, today, average)}
             </Text>
         </View>
     );

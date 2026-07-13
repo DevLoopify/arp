@@ -8,20 +8,97 @@ import { getWorkModeIcon, getWorkModeLabel } from '@/constants/workModeIcons';
 import { useWorkplaces } from '@/context/WorkplacesContext';
 import useCurrentLocation from '@/hooks/useCurrentLocation';
 import { Workplace } from '@/utils/api';
-import { getDistanceKm } from '@/utils/geo';
+import { Coordinate, getDistanceKm } from '@/utils/geo';
 import { resolveImage } from '@/utils/resolveImage';
 import { clearWorkspaceDraft, getWorkspaceDraft, saveWorkspaceDraft } from '@/utils/workspaceDraft';
 import { Ionicons } from '@expo/vector-icons';
+import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
 import * as ImagePicker from 'expo-image-picker';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Alert, BackHandler, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, BackHandler, Image, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import MapView, { MapPressEvent, Marker } from 'react-native-maps';
 
 const UTILITIES = Object.keys(utilityIcons);
 const WORK_MODES = ['solo', 'group', 'both'];
 const NEARBY_THRESHOLD_KM = 0.1;
 const TIME_OF_DAY_PATTERN = /^([01]\d|2[0-3]):([0-5]\d)$/;
+
+const timeStringToDate = (time: string, fallback: string): Date => {
+    const isValidTime = TIME_OF_DAY_PATTERN.test(time);
+    const timeToUse = isValidTime ? time : fallback;
+
+    const [hours, minutes] = timeToUse.split(':').map(Number);
+
+    const date = new Date();
+    date.setHours(hours, minutes, 0, 0);
+    return date;
+};
+
+const dateToTimeString = (date: Date): string => {
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${hours}:${minutes}`;
+};
+
+function TimeField({
+    label,
+    time,
+    fallback,
+    onChange,
+}: {
+    label: string;
+    time: string;
+    fallback: string;
+    onChange: (time: string) => void;
+}) {
+    const value = timeStringToDate(time, fallback);
+
+    if (Platform.OS === 'android') {
+        return (
+            <Pressable
+                style={styles.androidTimeButton}
+                onPress={() =>
+                    DateTimePickerAndroid.open({
+                        value,
+                        mode: 'time',
+                        is24Hour: true,
+                        minuteInterval: 15,
+                        onChange: (_event, selected) => {
+                            if (selected) {
+                                onChange(dateToTimeString(selected));
+                            }
+                        },
+                    })
+                }
+            >
+                <Text style={[Typography.caption, styles.hoursLabel]}>{label}</Text>
+                <Text style={styles.androidTimeValue}>{time || '--:--'}</Text>
+            </Pressable>
+        );
+    }
+
+    return (
+        <View>
+            <Text style={[Typography.caption, styles.hoursLabel]}>{label}</Text>
+            <View style={styles.timePickerWrapper}>
+                <DateTimePicker
+                    value={value}
+                    mode="time"
+                    display="spinner"
+                    locale="de-DE"
+                    minuteInterval={15}
+                    onChange={(_event, selected) => {
+                        if (selected) {
+                            onChange(dateToTimeString(selected));
+                        }
+                    }}
+                    style={styles.timePicker}
+                />
+            </View>
+        </View>
+    );
+}
 
 const FALLBACK_REGION = {
     latitude: 52.5200,
@@ -48,32 +125,39 @@ export default function CreateWorkspace() {
     const [closesAt, setClosesAt] = useState<string>(editingWorkplace?.closesAt ?? draft?.closesAt ?? '');
     const [existingImages, setExistingImages] = useState<string[]>(editingWorkplace?.images ?? []);
     const [newPhotoUris, setNewPhotoUris] = useState<string[]>(isEditMode ? [] : draft?.photoUris ?? []);
-    const [markerCoordinate, setMarkerCoordinate] = useState<{ latitude: number; longitude: number } | null>(
+    const [markerCoordinate, setMarkerCoordinate] = useState<Coordinate | null>(
         editingWorkplace
             ? { latitude: editingWorkplace.latitude, longitude: editingWorkplace.longitude }
             : draft?.markerCoordinate ?? null
     );
     const [error, setError] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const { location, permissionGranted } = useCurrentLocation() as {
-        location: { latitude: number; longitude: number } | null;
-        permissionGranted: boolean;
-    };
+    const { location, permissionGranted } = useCurrentLocation();
     const mapRef = useRef<MapView>(null);
     const { workplaces, addWorkplace, updateWorkplace } = useWorkplaces();
 
-    const findNearbyWorkplace = (coordinate: { latitude: number; longitude: number }) => {
-        return workplaces.find(
-            (wp) =>
-                (!editingWorkplace || wp.id !== editingWorkplace.id) &&
-                getDistanceKm(coordinate, wp) <= NEARBY_THRESHOLD_KM
-        );
+    const findNearbyWorkplace = (coordinate: Coordinate) => {
+        return workplaces.find((wp) => {
+            const isEditingCurrentWorkplace =
+                editingWorkplace && wp.id === editingWorkplace.id;
+
+            const distance = getDistanceKm(coordinate, wp);
+            const isNearby = distance <= NEARBY_THRESHOLD_KM;
+
+            return !isEditingCurrentWorkplace && isNearby;
+        });
     };
 
     const toggleUtility = (utility: string) => {
-        setSelectedUtilities((prev) =>
-            prev.includes(utility) ? prev.filter((u) => u !== utility) : [...prev, utility]
-        );
+        setSelectedUtilities((prev) => {
+            const isAlreadySelected = prev.includes(utility);
+
+            if (isAlreadySelected) {
+                return prev.filter((u) => u !== utility);
+            }
+
+            return [...prev, utility];
+        });
     };
 
     const pickPhoto = async () => {
@@ -106,18 +190,55 @@ export default function CreateWorkspace() {
 
     const totalPhotoCount = existingImages.length + newPhotoUris.length;
 
-    const hasUnsavedChanges = editingWorkplace
-        ? name !== editingWorkplace.title ||
-          description !== editingWorkplace.description ||
-          JSON.stringify(selectedUtilities) !== JSON.stringify(editingWorkplace.utilities) ||
-          workMode !== editingWorkplace.workMode ||
-          opensAt !== (editingWorkplace.opensAt ?? '') ||
-          closesAt !== (editingWorkplace.closesAt ?? '') ||
-          JSON.stringify(existingImages) !== JSON.stringify(editingWorkplace.images) ||
-          newPhotoUris.length > 0 ||
-          markerCoordinate?.latitude !== editingWorkplace.latitude ||
-          markerCoordinate?.longitude !== editingWorkplace.longitude
-        : Boolean(name.trim() || description.trim() || selectedUtilities.length || opensAt || closesAt || totalPhotoCount || markerCoordinate);
+    const computeHasUnsavedChanges = () => {
+        if (editingWorkplace) {
+            const titleChanged = name !== editingWorkplace.title;
+            const descriptionChanged = description !== editingWorkplace.description;
+            const utilitiesChanged =
+                JSON.stringify(selectedUtilities) !== JSON.stringify(editingWorkplace.utilities);
+            const workModeChanged = workMode !== editingWorkplace.workMode;
+            const opensAtChanged = opensAt !== (editingWorkplace.opensAt ?? '');
+            const closesAtChanged = closesAt !== (editingWorkplace.closesAt ?? '');
+            const imagesChanged =
+                JSON.stringify(existingImages) !== JSON.stringify(editingWorkplace.images);
+            const hasNewPhotos = newPhotoUris.length > 0;
+            const latitudeChanged = markerCoordinate?.latitude !== editingWorkplace.latitude;
+            const longitudeChanged = markerCoordinate?.longitude !== editingWorkplace.longitude;
+
+            return (
+                titleChanged ||
+                descriptionChanged ||
+                utilitiesChanged ||
+                workModeChanged ||
+                opensAtChanged ||
+                closesAtChanged ||
+                imagesChanged ||
+                hasNewPhotos ||
+                latitudeChanged ||
+                longitudeChanged
+            );
+        }
+
+        const hasName = Boolean(name.trim());
+        const hasDescription = Boolean(description.trim());
+        const hasUtilities = selectedUtilities.length > 0;
+        const hasOpensAt = Boolean(opensAt);
+        const hasClosesAt = Boolean(closesAt);
+        const hasPhotos = totalPhotoCount > 0;
+        const hasLocation = Boolean(markerCoordinate);
+
+        return (
+            hasName ||
+            hasDescription ||
+            hasUtilities ||
+            hasOpensAt ||
+            hasClosesAt ||
+            hasPhotos ||
+            hasLocation
+        );
+    };
+
+    const hasUnsavedChanges = computeHasUnsavedChanges();
 
     const handleLeaveAttempt = () => {
         if (!hasUnsavedChanges) {
@@ -174,11 +295,19 @@ export default function CreateWorkspace() {
         return () => subscription.remove();
     }, [hasUnsavedChanges, name, description, selectedUtilities, workMode, opensAt, closesAt, existingImages, newPhotoUris, markerCoordinate]);
 
-    const initialRegion = markerCoordinate
-        ? { ...markerCoordinate, latitudeDelta: 0.02, longitudeDelta: 0.02 }
-        : location
-        ? { ...location, latitudeDelta: 0.02, longitudeDelta: 0.02 }
-        : FALLBACK_REGION;
+    const computeInitialRegion = () => {
+        if (markerCoordinate) {
+            return { ...markerCoordinate, latitudeDelta: 0.02, longitudeDelta: 0.02 };
+        }
+
+        if (location) {
+            return { ...location, latitudeDelta: 0.02, longitudeDelta: 0.02 };
+        }
+
+        return FALLBACK_REGION;
+    };
+
+    const initialRegion = computeInitialRegion();
 
     useEffect(() => {
         if (isEditMode || !location) return;
@@ -187,6 +316,14 @@ export default function CreateWorkspace() {
             300
         );
     }, [isEditMode, location?.latitude, location?.longitude]);
+
+    const getSubmitButtonLabel = () => {
+        if (isSubmitting) {
+            return isEditMode ? 'Saving...' : 'Adding...';
+        }
+
+        return isEditMode ? 'Save' : 'Add';
+    };
 
     const handleSubmit = async () => {
         const missing: string[] = [];
@@ -199,8 +336,12 @@ export default function CreateWorkspace() {
             setError(`Please add ${missing.join(', ')}.`);
             return;
         }
-        if ((opensAt.trim() && !TIME_OF_DAY_PATTERN.test(opensAt.trim())) ||
-            (closesAt.trim() && !TIME_OF_DAY_PATTERN.test(closesAt.trim()))) {
+        const trimmedOpensAt = opensAt.trim();
+        const trimmedClosesAt = closesAt.trim();
+        const opensAtIsInvalid = trimmedOpensAt !== '' && !TIME_OF_DAY_PATTERN.test(trimmedOpensAt);
+        const closesAtIsInvalid = trimmedClosesAt !== '' && !TIME_OF_DAY_PATTERN.test(trimmedClosesAt);
+
+        if (opensAtIsInvalid || closesAtIsInvalid) {
             setError('Opening and closing times must be in HH:MM format.');
             return;
         }
@@ -286,81 +427,69 @@ export default function CreateWorkspace() {
                     />
                 </View>
                 <Text style={[Typography.caption, styles.sectionLabel]}>Utilities</Text>
-                    <View style={styles.chipsContainer}>
-                        {UTILITIES.map((utility) => (
-                            <SelectionChip
-                                key={utility}
-                                text={utility}
-                                icon={<Ionicons name={getUtilityIcon(utility)} size={16} color={selectedUtilities.includes(utility) ? Colors.textWhite : Colors.primary} />}
-                                selected={selectedUtilities.includes(utility)}
-                                onPress={() => toggleUtility(utility)}
-                            />
+                <View style={styles.chipsContainer}>
+                    {UTILITIES.map((utility) => (
+                        <SelectionChip
+                            key={utility}
+                            text={utility}
+                            icon={<Ionicons name={getUtilityIcon(utility)} size={16} color={selectedUtilities.includes(utility) ? Colors.textWhite : Colors.primary} />}
+                            selected={selectedUtilities.includes(utility)}
+                            onPress={() => toggleUtility(utility)}
+                        />
+                    ))}
+                </View>
+
+                <Text style={[Typography.caption, styles.sectionLabel]}>Work Mode</Text>
+                <View style={styles.chipsContainer}>
+                    {WORK_MODES.map((mode) => (
+                        <SelectionChip
+                            key={mode}
+                            text={getWorkModeLabel(mode)}
+                            icon={<Ionicons name={getWorkModeIcon(mode)} size={16} color={workMode === mode ? Colors.textWhite : Colors.primary} />}
+                            selected={workMode === mode}
+                            onPress={() => setWorkMode(mode)}
+                        />
+                    ))}
+                </View>
+
+                <Text style={[Typography.caption, styles.sectionLabel]}>Opening Hours (optional)</Text>
+                <View style={styles.hoursRow}>
+                    <View style={styles.hoursField}>
+                        <TimeField label="Opens at" time={opensAt} fallback="09:00" onChange={setOpensAt} />
+                    </View>
+                    <View style={styles.hoursField}>
+                        <TimeField label="Closes at" time={closesAt} fallback="17:00" onChange={setClosesAt} />
+                    </View>
+                </View>
+
+                {totalPhotoCount > 0 ? (
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.photoRow}>
+                        {existingImages.map((url) => (
+                            <View key={url} style={styles.photoThumbnailWrapper}>
+                                <Image source={resolveImage(url)} style={styles.photoThumbnail} />
+                                <Pressable style={styles.removePhotoButton} onPress={() => removeExistingImage(url)}>
+                                    <Ionicons name="close" size={14} color={Colors.textWhite} />
+                                </Pressable>
+                            </View>
                         ))}
-                    </View>
-
-                    <Text style={[Typography.caption, styles.sectionLabel]}>Work Mode</Text>
-                    <View style={styles.chipsContainer}>
-                        {WORK_MODES.map((mode) => (
-                            <SelectionChip
-                                key={mode}
-                                text={getWorkModeLabel(mode)}
-                                icon={<Ionicons name={getWorkModeIcon(mode)} size={16} color={workMode === mode ? Colors.textWhite : Colors.primary} />}
-                                selected={workMode === mode}
-                                onPress={() => setWorkMode(mode)}
-                            />
+                        {newPhotoUris.map((uri) => (
+                            <View key={uri} style={styles.photoThumbnailWrapper}>
+                                <Image source={{ uri }} style={styles.photoThumbnail} />
+                                <Pressable style={styles.removePhotoButton} onPress={() => removeNewPhoto(uri)}>
+                                    <Ionicons name="close" size={14} color={Colors.textWhite} />
+                                </Pressable>
+                            </View>
                         ))}
-                    </View>
-
-                    <Text style={[Typography.caption, styles.sectionLabel]}>Opening Hours (optional)</Text>
-                    <View style={styles.hoursRow}>
-                        <View style={styles.hoursField}>
-                            <InputField
-                                label="Opens at (HH:MM)"
-                                value={opensAt}
-                                onChangeText={setOpensAt}
-                                secureTextEntry={undefined}
-                                keyboardType="numbers-and-punctuation"
-                            />
-                        </View>
-                        <View style={styles.hoursField}>
-                            <InputField
-                                label="Closes at (HH:MM)"
-                                value={closesAt}
-                                onChangeText={setClosesAt}
-                                secureTextEntry={undefined}
-                                keyboardType="numbers-and-punctuation"
-                            />
-                        </View>
-                    </View>
-
-                    {totalPhotoCount > 0 ? (
-                        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.photoRow}>
-                            {existingImages.map((url) => (
-                                <View key={url} style={styles.photoThumbnailWrapper}>
-                                    <Image source={resolveImage(url)} style={styles.photoThumbnail} />
-                                    <Pressable style={styles.removePhotoButton} onPress={() => removeExistingImage(url)}>
-                                        <Ionicons name="close" size={14} color={Colors.textWhite} />
-                                    </Pressable>
-                                </View>
-                            ))}
-                            {newPhotoUris.map((uri) => (
-                                <View key={uri} style={styles.photoThumbnailWrapper}>
-                                    <Image source={{ uri }} style={styles.photoThumbnail} />
-                                    <Pressable style={styles.removePhotoButton} onPress={() => removeNewPhoto(uri)}>
-                                        <Ionicons name="close" size={14} color={Colors.textWhite} />
-                                    </Pressable>
-                                </View>
-                            ))}
-                            <Pressable style={styles.addMorePhoto} onPress={pickPhoto}>
-                                <Ionicons name="add" size={28} color={Colors.textMuted} />
-                            </Pressable>
-                        </ScrollView>
-                    ) : (
-                        <Pressable style={styles.photoPicker} onPress={pickPhoto}>
-                            <Ionicons name="camera-outline" size={28} color={Colors.textMuted} />
-                            <Text style={[Typography.caption, styles.photoPickerText]}>Add photos</Text>
+                        <Pressable style={styles.addMorePhoto} onPress={pickPhoto}>
+                            <Ionicons name="add" size={28} color={Colors.textMuted} />
                         </Pressable>
-                    )}
+                    </ScrollView>
+                ) : (
+                    <Pressable style={styles.photoPicker} onPress={pickPhoto}>
+                        <Ionicons name="camera-outline" size={28} color={Colors.textMuted} />
+                        <Text style={[Typography.caption, styles.photoPickerText]}>Add photos</Text>
+                    </Pressable>
+                )}
 
                 <Text style={[Typography.caption, styles.sectionLabel]}>Location</Text>
                 <View style={styles.mapWrapper}>
@@ -386,7 +515,7 @@ export default function CreateWorkspace() {
                     </Pressable>
                     <View style={styles.addButton}>
                         <PrimaryButton
-                            label={isSubmitting ? (isEditMode ? 'Saving...' : 'Adding...') : isEditMode ? 'Save' : 'Add'}
+                            label={getSubmitButtonLabel()}
                             onPress={handleSubmit}
                         />
                     </View>
@@ -492,11 +621,38 @@ const styles = StyleSheet.create({
         flexWrap: 'wrap',
     },
     hoursRow: {
-        flexDirection: 'row',
-        gap: 12,
+        flexDirection: 'column',
+        gap: 16,
+        marginBottom: 28,
     },
     hoursField: {
-        flex: 1,
+        width: '100%',
+    },
+    hoursLabel: {
+        color: Colors.textMuted,
+        marginBottom: 4,
+    },
+    timePickerWrapper: {
+        height: 130,
+        overflow: 'hidden',
+        justifyContent: 'center',
+    },
+    timePicker: {
+        alignSelf: 'stretch',
+        transform: [{ scale: 0.75 }],
+    },
+    androidTimeButton: {
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#d1e1fa',
+        backgroundColor: Colors.backgroundWhite,
+        paddingVertical: 12,
+        paddingHorizontal: 14,
+    },
+    androidTimeValue: {
+        ...Typography.body,
+        color: Colors.textPrimary,
+        marginTop: 2,
     },
     mapWrapper: {
         height: 440,

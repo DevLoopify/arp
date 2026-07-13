@@ -25,6 +25,24 @@ const MAX_VISIBLE_UTILITIES = 3;
 const MOCK_OPENS_AT = '09:00';
 const MOCK_CLOSES_AT = '18:00';
 
+function renderCardMedia(cardWidth, resolvedImages) {
+    const layoutNotMeasuredYet = cardWidth === 0;
+    if (layoutNotMeasuredYet) {
+        return null;
+    }
+
+    const hasImages = resolvedImages.length > 0;
+    if (hasImages) {
+        return <ImageCarousel images={resolvedImages} width={cardWidth} />;
+    }
+
+    return (
+        <View style={[styles.imagePlaceholder, { width: cardWidth }]}>
+            <Ionicons name="image-outline" size={32} color={Colors.textMuted} />
+        </View>
+    );
+}
+
 export default function WorkplaceCard({ workplace, userLocation = null, highlighted = false }) {
     const { title, description, images, rating, noise, crowdedness, crowdByHourToday, utilities, latitude, longitude, opensAt, closesAt } = workplace;
     const { user } = useAuth();
@@ -94,13 +112,7 @@ export default function WorkplaceCard({ workplace, userLocation = null, highligh
                 ]}
             >
                 <View>
-                    {cardWidth > 0 && (resolvedImages.length > 0 ? (
-                        <ImageCarousel images={resolvedImages} width={cardWidth} />
-                    ) : (
-                        <View style={[styles.imagePlaceholder, { width: cardWidth }]}>
-                            <Ionicons name="image-outline" size={32} color={Colors.textMuted} />
-                        </View>
-                    ))}
+                    {renderCardMedia(cardWidth, resolvedImages)}
                     <View style={styles.favouriteButtonPosition}>
                         <FavouriteButton workplaceId={workplace.id} />
                     </View>

@@ -3,21 +3,32 @@ export const levelOrder = ['empty', 'slightly_crowded', 'medium_full', 'very_cro
 export const CHART_HEIGHT = 100;
 export const TOP_PADDING = 10;
 
-function levelY(level) {
-    const value = levelOrder.indexOf(level) / (levelOrder.length - 1);
-    return TOP_PADDING + (1 - value) * (CHART_HEIGHT - TOP_PADDING);
+function levelToY(level) {
+    const levelIndex = levelOrder.indexOf(level);
+    const maxLevelIndex = levelOrder.length - 1;
+    const normalizedValue = levelIndex / maxLevelIndex;
+
+    const invertedValue = 1 - normalizedValue;
+    const availableHeight = CHART_HEIGHT - TOP_PADDING;
+
+    return TOP_PADDING + invertedValue * availableHeight;
 }
 
 export function linePath(levels, width, totalHours) {
-    return levels
-        .map((level, hour) => {
-            const x = (hour / (totalHours - 1)) * width;
-            const y = levelY(level);
-            return `${hour === 0 ? 'M' : 'L'} ${x} ${y}`;
-        })
-        .join(' ');
+    const points = levels.map((level, hour) => {
+        const x = (hour / (totalHours - 1)) * width;
+        const y = levelToY(level);
+
+        const isFirstPoint = hour === 0;
+        const command = isFirstPoint ? 'M' : 'L';
+
+        return `${command} ${x} ${y}`;
+    });
+
+    return points.join(' ');
 }
 
 export function areaPath(levels, width, totalHours) {
-    return `${linePath(levels, width, totalHours)} L ${width} ${CHART_HEIGHT} L 0 ${CHART_HEIGHT} Z`;
+    const line = linePath(levels, width, totalHours);
+    return `${line} L ${width} ${CHART_HEIGHT} L 0 ${CHART_HEIGHT} Z`;
 }

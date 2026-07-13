@@ -1,5 +1,5 @@
 import { useAuth } from '@/context/AuthContext';
-import { api, resolveApiUrl } from '@/utils/api';
+import { api, resolveApiUrl, User } from '@/utils/api';
 import { createContext, ReactNode, useCallback, useContext, useMemo } from 'react';
 
 export type NoiseLevel = 1 | 2 | 3 | 4 | 5;
@@ -37,28 +37,42 @@ type UserProfileContextValue = {
 
 const UserProfileContext = createContext<UserProfileContextValue | undefined>(undefined);
 
+function userToSettings(user: User): UserProfileSettings {
+    const avatarUri = user.avatarUrl ? resolveApiUrl(user.avatarUrl) : null;
+
+    return {
+        name: user.name,
+        avatarUri,
+        noiseLevel: user.noiseLevel as NoiseLevel,
+        radius: user.radius,
+        workMode: user.workMode as WorkMode,
+        utilities: user.utilities,
+        unit: user.unit as DistanceUnit,
+        language: user.language as Language,
+    };
+}
+
 export function UserProfileProvider({ children }: { children: ReactNode }) {
     const { user, token, isLoading: authLoading, updateUser } = useAuth();
 
     const settings: UserProfileSettings = useMemo(() => {
-        if (!user) return DEFAULT_PROFILE_SETTINGS;
-        return {
-            name: user.name,
-            avatarUri: user.avatarUrl ? resolveApiUrl(user.avatarUrl) : null,
-            noiseLevel: user.noiseLevel as NoiseLevel,
-            radius: user.radius,
-            workMode: user.workMode as WorkMode,
-            utilities: user.utilities,
-            unit: user.unit as DistanceUnit,
-            language: user.language as Language,
-        };
+        if (!user) {
+            return DEFAULT_PROFILE_SETTINGS;
+        }
+
+        return userToSettings(user);
     }, [user]);
 
     const saveSettings = useCallback(
         async (next: UserProfileSettings) => {
-            if (!token) throw new Error('You must be logged in to update your profile.');
+            if (!token) {
+                throw new Error('You must be logged in to update your profile.');
+            }
 
+            // Three cases: the user picked a new photo (upload it), the user
+            // removed their photo (clear the url), or it is unchanged (keep it).
             let avatarUrl = user?.avatarUrl ?? '';
+
             if (next.avatarUri && next.avatarUri !== settings.avatarUri) {
                 const uploaded = await api.uploads.upload(token, next.avatarUri);
                 avatarUrl = uploaded.url;
@@ -79,16 +93,7 @@ export function UserProfileProvider({ children }: { children: ReactNode }) {
 
             updateUser(updated);
 
-            return {
-                name: updated.name,
-                avatarUri: updated.avatarUrl ? resolveApiUrl(updated.avatarUrl) : null,
-                noiseLevel: updated.noiseLevel as NoiseLevel,
-                radius: updated.radius,
-                workMode: updated.workMode as WorkMode,
-                utilities: updated.utilities,
-                unit: updated.unit as DistanceUnit,
-                language: updated.language as Language,
-            };
+            return userToSettings(updated);
         },
         [token, user, settings.avatarUri, updateUser]
     );

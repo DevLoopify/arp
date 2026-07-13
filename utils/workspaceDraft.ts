@@ -1,3 +1,5 @@
+import { Coordinate } from '@/utils/geo';
+
 export type WorkspaceDraft = {
     name: string;
     description: string;
@@ -6,7 +8,7 @@ export type WorkspaceDraft = {
     opensAt: string | null;
     closesAt: string | null;
     photoUris: string[];
-    markerCoordinate: { latitude: number; longitude: number } | null;
+    markerCoordinate: Coordinate | null;
 };
 
 let draft: WorkspaceDraft | null = null;

@@ -4,7 +4,6 @@ import { ComponentProps } from 'react';
 type IconName = ComponentProps<typeof Ionicons>['name'];
 
 const utilityIcons: Record<string, IconName> = {
-    // High priority: essentials for working
     wifi: 'wifi-outline',
     'power outlets': 'flash-outline',
     'quiet zones': 'volume-mute-outline',
@@ -13,7 +12,6 @@ const utilityIcons: Record<string, IconName> = {
     '24/7 access': 'time-outline',
     accessible: 'accessibility-outline',
 
-    // Medium priority: comfort and convenience
     coffee: 'cafe-outline',
     printer: 'print-outline',
     'meeting rooms': 'people-outline',
@@ -26,7 +24,6 @@ const utilityIcons: Record<string, IconName> = {
     'bike parking': 'bicycle-outline',
     'private workspace': 'person-circle-outline',
 
-    // Low priority: nice-to-haves
     'natural light': 'sunny-outline',
     'outdoor seating': 'umbrella-outline',
     benches: 'leaf-outline',

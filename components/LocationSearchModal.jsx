@@ -20,7 +20,10 @@ export default function LocationSearchModal({ visible, onClose }) {
             onStartShouldSetPanResponder: () => true,
             onMoveShouldSetPanResponder: (_, g) => g.dy > 5,
             onPanResponderRelease: (_, g) => {
-                if (g.dy > 80) onClose();
+                const wasSwipedDownFarEnough = g.dy > 80;
+                if (wasSwipedDownFarEnough) {
+                    onClose();
+                }
             },
         })
     ).current;
@@ -44,19 +47,26 @@ export default function LocationSearchModal({ visible, onClose }) {
 
         setLoading(true);
         const timeout = setTimeout(async () => {
+            const url = `https://nominatim.openstreetmap.org/search?format=json&limit=5&q=${encodeURIComponent(trimmed)}`;
+
             try {
-                const res = await fetch(
-                    `https://nominatim.openstreetmap.org/search?format=json&limit=5&q=${encodeURIComponent(trimmed)}`,
-                    { headers: { Accept: 'application/json' } }
-                );
+                const res = await fetch(url, { headers: { Accept: 'application/json' } });
                 const results = await res.json();
-                if (latestQueryRef.current === trimmed) {
+
+                const isStillLatestQuery = latestQueryRef.current === trimmed;
+                if (isStillLatestQuery) {
                     setSuggestions(results);
                 }
             } catch {
-                if (latestQueryRef.current === trimmed) setSuggestions([]);
+                const isStillLatestQuery = latestQueryRef.current === trimmed;
+                if (isStillLatestQuery) {
+                    setSuggestions([]);
+                }
             } finally {
-                if (latestQueryRef.current === trimmed) setLoading(false);
+                const isStillLatestQuery = latestQueryRef.current === trimmed;
+                if (isStillLatestQuery) {
+                    setLoading(false);
+                }
             }
         }, SEARCH_DEBOUNCE_MS);
 
@@ -82,6 +92,55 @@ export default function LocationSearchModal({ visible, onClose }) {
     };
 
     const showSuggestions = query.trim().length >= MIN_QUERY_LENGTH;
+
+    function renderResultsSection() {
+        if (showSuggestions) {
+            return (
+                <View style={styles.resultsSection}>
+                    <Text style={styles.sectionLabel}>Suggestions</Text>
+                    {suggestions.length > 0 ? (
+                        suggestions.map((item) => (
+                            <Pressable
+                                key={item.place_id}
+                                style={styles.resultRow}
+                                onPress={() => handleSelectSuggestion(item)}
+                            >
+                                <Ionicons name="location-outline" size={18} color={Colors.textMuted} />
+                                <Text style={styles.resultText} numberOfLines={2}>
+                                    {item.display_name}
+                                </Text>
+                            </Pressable>
+                        ))
+                    ) : !loading ? (
+                        <Text style={styles.emptyText}>No matches found.</Text>
+                    ) : null}
+                </View>
+            );
+        }
+
+        const hasHistory = history.length > 0;
+        if (!hasHistory) {
+            return null;
+        }
+
+        return (
+            <View style={styles.resultsSection}>
+                <Text style={styles.sectionLabel}>Recent searches</Text>
+                {history.map((item) => (
+                    <Pressable
+                        key={`${item.label}-${item.latitude}-${item.longitude}`}
+                        style={styles.resultRow}
+                        onPress={() => selectLocation(item)}
+                    >
+                        <Ionicons name="time-outline" size={18} color={Colors.textMuted} />
+                        <Text style={styles.resultText} numberOfLines={2}>
+                            {item.label}
+                        </Text>
+                    </Pressable>
+                ))}
+            </View>
+        );
+    }
 
     return (
         <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -116,45 +175,7 @@ export default function LocationSearchModal({ visible, onClose }) {
                             </Text>
                         </Pressable>
 
-                        {showSuggestions ? (
-                            <View style={styles.resultsSection}>
-                                <Text style={styles.sectionLabel}>Suggestions</Text>
-                                {suggestions.length > 0 ? (
-                                    suggestions.map((item) => (
-                                        <Pressable
-                                            key={item.place_id}
-                                            style={styles.resultRow}
-                                            onPress={() => handleSelectSuggestion(item)}
-                                        >
-                                            <Ionicons name="location-outline" size={18} color={Colors.textMuted} />
-                                            <Text style={styles.resultText} numberOfLines={2}>
-                                                {item.display_name}
-                                            </Text>
-                                        </Pressable>
-                                    ))
-                                ) : !loading ? (
-                                    <Text style={styles.emptyText}>No matches found.</Text>
-                                ) : null}
-                            </View>
-                        ) : (
-                            history.length > 0 && (
-                                <View style={styles.resultsSection}>
-                                    <Text style={styles.sectionLabel}>Recent searches</Text>
-                                    {history.map((item) => (
-                                        <Pressable
-                                            key={`${item.label}-${item.latitude}-${item.longitude}`}
-                                            style={styles.resultRow}
-                                            onPress={() => selectLocation(item)}
-                                        >
-                                            <Ionicons name="time-outline" size={18} color={Colors.textMuted} />
-                                            <Text style={styles.resultText} numberOfLines={2}>
-                                                {item.label}
-                                            </Text>
-                                        </Pressable>
-                                    ))}
-                                </View>
-                            )
-                        )}
+                        {renderResultsSection()}
                     </View>
                 </View>
             </View>

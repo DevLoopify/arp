@@ -33,7 +33,8 @@
           "locationWhenInUsePermission": "Allow arp to use your location to show your position on the map."
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      "@react-native-community/datetimepicker"
     ],
     "experiments": {
       "typedRoutes": true,

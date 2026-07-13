@@ -1,4 +1,4 @@
-import { createContext, ReactNode, useContext, useMemo, useState } from 'react';
+import { createContext, ReactNode, useCallback, useContext, useMemo, useState } from 'react';
 
 export type VirtualLocation = {
     latitude: number;
@@ -21,20 +21,25 @@ export function SearchLocationProvider({ children }: { children: ReactNode }) {
     const [searchLocation, setSearchLocationState] = useState<VirtualLocation | null>(null);
     const [history, setHistory] = useState<VirtualLocation[]>([]);
 
+    const setSearchLocation = useCallback((location: VirtualLocation) => {
+        setSearchLocationState(location);
+
+        setHistory((previousHistory) => {
+            const historyWithoutDuplicate = previousHistory.filter(
+                (entry) => entry.label !== location.label
+            );
+            const updatedHistory = [location, ...historyWithoutDuplicate];
+            return updatedHistory.slice(0, MAX_HISTORY);
+        });
+    }, []);
+
+    const clearSearchLocation = useCallback(() => {
+        setSearchLocationState(null);
+    }, []);
+
     const value = useMemo(
-        () => ({
-            searchLocation,
-            history,
-            setSearchLocation: (location: VirtualLocation) => {
-                setSearchLocationState(location);
-                setHistory((prev) => [
-                    location,
-                    ...prev.filter((entry) => entry.label !== location.label),
-                ].slice(0, MAX_HISTORY));
-            },
-            clearSearchLocation: () => setSearchLocationState(null),
-        }),
-        [searchLocation, history]
+        () => ({ searchLocation, history, setSearchLocation, clearSearchLocation }),
+        [searchLocation, history, setSearchLocation, clearSearchLocation]
     );
 
     return <SearchLocationContext.Provider value={value}>{children}</SearchLocationContext.Provider>;

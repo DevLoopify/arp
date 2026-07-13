@@ -1,3 +1,5 @@
+import InputField from '@/components/InputField';
+import SelectionChip from '@/components/SelectionChip';
 import Colors from '@/constants/Colors';
 import Typography from '@/constants/Typography';
 import utilityIcons, { getUtilityIcon } from '@/constants/utilityIcons';
@@ -10,10 +12,8 @@ import { Ionicons } from '@expo/vector-icons';
 import Slider from '@react-native-community/slider';
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
-import { Dispatch, SetStateAction, useEffect, useState } from 'react';
-import { Alert, Image, LayoutAnimation, Modal, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, UIManager, View,} from 'react-native';
-import InputField from '@/components/InputField';
-import SelectionChip from '@/components/SelectionChip';
+import { Dispatch, ReactNode, SetStateAction, useEffect, useState } from 'react';
+import { Alert, Image, LayoutAnimation, Modal, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, UIManager, View } from 'react-native';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
     UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -39,7 +39,7 @@ const DEFAULT_AVATAR =
 export default function ProfileScreen() {
     const { settings, isLoaded, saveSettings } = useUserProfile();
     const { setFilters } = useFilters();
-    const { user } = useAuth();
+    const { user, logout } = useAuth();
     const { workplaces, deleteWorkplace, deleteReview } = useWorkplaces();
 
     const [avatarUri, setAvatarUri] = useState<string | null>(null);
@@ -59,7 +59,10 @@ export default function ProfileScreen() {
     const [showSavedToast, setShowSavedToast] = useState(false);
 
     useEffect(() => {
-        if (!isLoaded) return;
+        if (!isLoaded) {
+            return;
+        }
+
         setAvatarUri(settings.avatarUri);
         setName(settings.name);
         setNoiseLevel(settings.noiseLevel);
@@ -76,9 +79,15 @@ export default function ProfileScreen() {
     };
 
     const toggleUtility = (utility: string) => {
-        setSelectedUtilities((prev) =>
-            prev.includes(utility) ? prev.filter((u) => u !== utility) : [...prev, utility]
-        );
+        setSelectedUtilities((prev) => {
+            const isAlreadySelected = prev.includes(utility);
+
+            if (isAlreadySelected) {
+                return prev.filter((u) => u !== utility);
+            }
+
+            return [...prev, utility];
+        });
     };
 
     const pickAvatar = async () => {
@@ -97,7 +106,8 @@ export default function ProfileScreen() {
         }
     };
 
-    const handleLogout = () => {
+    const handleLogout = async () => {
+        await logout();
         router.replace('/login');
     };
 
@@ -116,26 +126,30 @@ export default function ProfileScreen() {
         router.push({ pathname: '/create_workspace', params: { workplace: JSON.stringify(wp) } });
     };
 
-    const handleDeleteWorkplace = (wp: Workplace) => {
-        Alert.alert(
+    const confirmDelete = (title: string, message: string, errorTitle: string, onConfirm: () => Promise<void>) => {
+        Alert.alert(title, message, [
+            { text: 'Cancel', style: 'cancel' },
+            {
+                text: 'Delete',
+                style: 'destructive',
+                onPress: async () => {
+                    try {
+                        await onConfirm();
+                    } catch (err) {
+                        Alert.alert(errorTitle, err instanceof Error ? err.message : 'Please try again.');
+                    }
+                },
+            },
+        ]);
+    };
+
+    const handleDeleteWorkplace = (wp: Workplace) =>
+        confirmDelete(
             'Delete workplace?',
             `This will permanently delete "${wp.title}" and its reviews. This cannot be undone.`,
-            [
-                { text: 'Cancel', style: 'cancel' },
-                {
-                    text: 'Delete',
-                    style: 'destructive',
-                    onPress: async () => {
-                        try {
-                            await deleteWorkplace(wp.id);
-                        } catch (err) {
-                            Alert.alert('Could not delete workplace', err instanceof Error ? err.message : 'Please try again.');
-                        }
-                    },
-                },
-            ]
+            'Could not delete workplace',
+            () => deleteWorkplace(wp.id)
         );
-    };
 
     const handleEditReview = (wp: Workplace, review: Review) => {
         router.push({
@@ -144,22 +158,10 @@ export default function ProfileScreen() {
         });
     };
 
-    const handleDeleteReview = (review: Review) => {
-        Alert.alert('Delete review?', 'This cannot be undone.', [
-            { text: 'Cancel', style: 'cancel' },
-            {
-                text: 'Delete',
-                style: 'destructive',
-                onPress: async () => {
-                    try {
-                        await deleteReview(review.id);
-                    } catch (err) {
-                        Alert.alert('Could not delete review', err instanceof Error ? err.message : 'Please try again.');
-                    }
-                },
-            },
-        ]);
-    };
+    const handleDeleteReview = (review: Review) =>
+        confirmDelete('Delete review?', 'This cannot be undone.', 'Could not delete review', () =>
+            deleteReview(review.id)
+        );
 
     const handleSave = async () => {
         try {
@@ -201,173 +203,146 @@ export default function ProfileScreen() {
                 />
             </View>
 
-            <View style={styles.section}>
-                <Pressable style={styles.sectionHeader} onPress={() => toggleSection(setPreferencesExpanded)}>
-                    <Text style={styles.sectionTitle}>Workspace Preferences</Text>
-                    <Ionicons
-                        name={preferencesExpanded ? 'chevron-up' : 'chevron-down'}
-                        size={20}
-                        color={Colors.textPrimary}
-                    />
-                </Pressable>
-
-                {preferencesExpanded && (
-                    <View style={styles.sectionBody}>
-                        <Text style={styles.fieldLabel}>Noise Level</Text>
-                        <View style={styles.noiseRow}>
-                            {NOISE_LEVELS.map((level) => (
-                                <SelectionChip
-                                    key={level}
-                                    text={String(level)}
-                                    icon={undefined}
-                                    selected={noiseLevel === level}
-                                    onPress={() => setNoiseLevel(level)}
-                                />
-                            ))}
-                        </View>
-
-                        <View style={styles.radiusHeader}>
-                            <Text style={styles.fieldLabel}>Search Radius</Text>
-                            <Text style={styles.radiusValue}>{radius} m</Text>
-                        </View>
-                        <Slider
-                            key={isLoaded ? 'loaded' : 'loading'}
-                            style={styles.slider}
-                            minimumValue={100}
-                            maximumValue={5000}
-                            step={100}
-                            value={radius}
-                            onValueChange={setRadius}
-                            minimumTrackTintColor="#1E88E5"
-                            maximumTrackTintColor="#ccc"
-                            thumbTintColor="#1E88E5"
+            <CollapsibleSection
+                title="Workspace Preferences"
+                expanded={preferencesExpanded}
+                onToggle={() => toggleSection(setPreferencesExpanded)}
+            >
+                <Text style={styles.fieldLabel}>Noise Level</Text>
+                <View style={styles.noiseRow}>
+                    {NOISE_LEVELS.map((level) => (
+                        <SelectionChip
+                            key={level}
+                            text={String(level)}
+                            icon={undefined}
+                            selected={noiseLevel === level}
+                            onPress={() => setNoiseLevel(level)}
                         />
+                    ))}
+                </View>
 
-                        <Text style={styles.fieldLabel}>Work Mode</Text>
-                        <View style={styles.workModeRow}>
-                            <View style={styles.workModeTextWrapper}>
-                                <Text style={styles.workModeLabel}>Group Work</Text>
-                            </View>
-                            <Switch
-                                value={workMode === 'group'}
-                                onValueChange={(value) => setWorkMode(value ? 'group' : 'solo')}
-                                trackColor={{ false: '#ccc', true: Colors.primary }}
-                                thumbColor="#fff"
-                            />
-                        </View>
+                <View style={styles.radiusHeader}>
+                    <Text style={styles.fieldLabel}>Search Radius</Text>
+                    <Text style={styles.radiusValue}>{radius} m</Text>
+                </View>
+                <Slider
+                    key={isLoaded ? 'loaded' : 'loading'}
+                    style={styles.slider}
+                    minimumValue={100}
+                    maximumValue={5000}
+                    step={100}
+                    value={radius}
+                    onValueChange={setRadius}
+                    minimumTrackTintColor="#1E88E5"
+                    maximumTrackTintColor="#ccc"
+                    thumbTintColor="#1E88E5"
+                />
 
-                        <Text style={styles.fieldLabel}>Utilities</Text>
-                        <View style={styles.chipsContainer}>
-                            {UTILITIES.map((utility) => (
-                                <SelectionChip
-                                    key={utility}
-                                    text={utility}
-                                    icon={
-                                        <Ionicons
-                                            name={getUtilityIcon(utility)}
-                                            size={16}
-                                            color={selectedUtilities.includes(utility) ? Colors.textWhite : Colors.primary}
-                                        />
-                                    }
-                                    selected={selectedUtilities.includes(utility)}
-                                    onPress={() => toggleUtility(utility)}
+                <Text style={styles.fieldLabel}>Work Mode</Text>
+                <View style={styles.workModeRow}>
+                    <View style={styles.workModeTextWrapper}>
+                        <Text style={styles.workModeLabel}>Group Work</Text>
+                    </View>
+                    <Switch
+                        value={workMode === 'group'}
+                        onValueChange={(value) => setWorkMode(value ? 'group' : 'solo')}
+                        trackColor={{ false: '#ccc', true: Colors.primary }}
+                        thumbColor="#fff"
+                    />
+                </View>
+
+                <Text style={styles.fieldLabel}>Utilities</Text>
+                <View style={styles.chipsContainer}>
+                    {UTILITIES.map((utility) => (
+                        <SelectionChip
+                            key={utility}
+                            text={utility}
+                            icon={
+                                <Ionicons
+                                    name={getUtilityIcon(utility)}
+                                    size={16}
+                                    color={selectedUtilities.includes(utility) ? Colors.textWhite : Colors.primary}
                                 />
-                            ))}
-                        </View>
-                    </View>
-                )}
-            </View>
+                            }
+                            selected={selectedUtilities.includes(utility)}
+                            onPress={() => toggleUtility(utility)}
+                        />
+                    ))}
+                </View>
+            </CollapsibleSection>
 
-            <View style={styles.section}>
-                <Pressable style={styles.sectionHeader} onPress={() => toggleSection(setWorkplacesExpanded)}>
-                    <Text style={styles.sectionTitle}>Created Workplaces</Text>
-                    <Ionicons
-                        name={workplacesExpanded ? 'chevron-up' : 'chevron-down'}
-                        size={20}
-                        color={Colors.textPrimary}
-                    />
-                </Pressable>
-
-                {workplacesExpanded && (
-                    <View style={styles.sectionBody}>
-                        {myWorkplaces.length === 0 ? (
-                            <Text style={styles.emptyListText}>You haven&apos;t added any workplaces yet.</Text>
-                        ) : (
-                            myWorkplaces.map((wp) => (
-                                <Pressable key={wp.id} style={styles.listRow} onPress={() => handleViewWorkplace(wp)}>
-                                    <Text style={styles.listRowTitle} numberOfLines={1}>{wp.title}</Text>
-                                    <View style={styles.listRowActions}>
-                                        <Pressable style={styles.listRowIcon} onPress={() => handleEditWorkplace(wp)} hitSlop={8}>
-                                            <Ionicons name="pencil" size={18} color={Colors.primary} />
-                                        </Pressable>
-                                        <Pressable style={styles.listRowIcon} onPress={() => handleDeleteWorkplace(wp)} hitSlop={8}>
-                                            <Ionicons name="trash-outline" size={18} color={Colors.live} />
-                                        </Pressable>
-                                    </View>
+            <CollapsibleSection
+                title="Created Workplaces"
+                expanded={workplacesExpanded}
+                onToggle={() => toggleSection(setWorkplacesExpanded)}
+            >
+                {myWorkplaces.length === 0 ? (
+                    <Text style={styles.emptyListText}>You haven&apos;t added any workplaces yet.</Text>
+                ) : (
+                    myWorkplaces.map((wp) => (
+                        <Pressable key={wp.id} style={styles.listRow} onPress={() => handleViewWorkplace(wp)}>
+                            <Text style={styles.listRowTitle} numberOfLines={1}>{wp.title}</Text>
+                            <View style={styles.listRowActions}>
+                                <Pressable style={styles.listRowIcon} onPress={() => handleEditWorkplace(wp)} hitSlop={8}>
+                                    <Ionicons name="pencil" size={18} color={Colors.primary} />
                                 </Pressable>
-                            ))
-                        )}
-                    </View>
+                                <Pressable style={styles.listRowIcon} onPress={() => handleDeleteWorkplace(wp)} hitSlop={8}>
+                                    <Ionicons name="trash-outline" size={18} color={Colors.live} />
+                                </Pressable>
+                            </View>
+                        </Pressable>
+                    ))
                 )}
-            </View>
+            </CollapsibleSection>
 
-            <View style={styles.section}>
-                <Pressable style={styles.sectionHeader} onPress={() => toggleSection(setReviewsExpanded)}>
-                    <Text style={styles.sectionTitle}>Created Reviews</Text>
-                    <Ionicons
-                        name={reviewsExpanded ? 'chevron-up' : 'chevron-down'}
-                        size={20}
-                        color={Colors.textPrimary}
-                    />
-                </Pressable>
-
-                {reviewsExpanded && (
-                    <View style={styles.sectionBody}>
-                        {myReviews.length === 0 ? (
-                            <Text style={styles.emptyListText}>You haven&apos;t written any reviews yet.</Text>
-                        ) : (
-                            myReviews.map((review) => (
+            <CollapsibleSection
+                title="Created Reviews"
+                expanded={reviewsExpanded}
+                onToggle={() => toggleSection(setReviewsExpanded)}
+            >
+                {myReviews.length === 0 ? (
+                    <Text style={styles.emptyListText}>You haven&apos;t written any reviews yet.</Text>
+                ) : (
+                    myReviews.map((review) => (
+                        <Pressable
+                            key={review.id}
+                            style={styles.listRow}
+                            onPress={() => handleViewWorkplace(review.workplace)}
+                        >
+                            <View style={styles.reviewRowContent}>
+                                <Text style={styles.listRowTitle} numberOfLines={1}>{review.workplace.title}</Text>
+                                <View style={styles.reviewStars}>
+                                    {[1, 2, 3, 4, 5].map((star) => (
+                                        <Ionicons
+                                            key={star}
+                                            name={star <= review.rating ? 'star' : 'star-outline'}
+                                            size={12}
+                                            color="#FFD700"
+                                        />
+                                    ))}
+                                </View>
+                                <Text style={styles.reviewComment} numberOfLines={2}>{review.comment}</Text>
+                            </View>
+                            <View style={styles.listRowActions}>
                                 <Pressable
-                                    key={review.id}
-                                    style={styles.listRow}
-                                    onPress={() => handleViewWorkplace(review.workplace)}
+                                    style={styles.listRowIcon}
+                                    onPress={() => handleEditReview(review.workplace, review)}
+                                    hitSlop={8}
                                 >
-                                    <View style={styles.reviewRowContent}>
-                                        <Text style={styles.listRowTitle} numberOfLines={1}>{review.workplace.title}</Text>
-                                        <View style={styles.reviewStars}>
-                                            {[1, 2, 3, 4, 5].map((star) => (
-                                                <Ionicons
-                                                    key={star}
-                                                    name={star <= review.rating ? 'star' : 'star-outline'}
-                                                    size={12}
-                                                    color="#FFD700"
-                                                />
-                                            ))}
-                                        </View>
-                                        <Text style={styles.reviewComment} numberOfLines={2}>{review.comment}</Text>
-                                    </View>
-                                    <View style={styles.listRowActions}>
-                                        <Pressable
-                                            style={styles.listRowIcon}
-                                            onPress={() => handleEditReview(review.workplace, review)}
-                                            hitSlop={8}
-                                        >
-                                            <Ionicons name="pencil" size={18} color={Colors.primary} />
-                                        </Pressable>
-                                        <Pressable
-                                            style={styles.listRowIcon}
-                                            onPress={() => handleDeleteReview(review)}
-                                            hitSlop={8}
-                                        >
-                                            <Ionicons name="trash-outline" size={18} color={Colors.live} />
-                                        </Pressable>
-                                    </View>
+                                    <Ionicons name="pencil" size={18} color={Colors.primary} />
                                 </Pressable>
-                            ))
-                        )}
-                    </View>
+                                <Pressable
+                                    style={styles.listRowIcon}
+                                    onPress={() => handleDeleteReview(review)}
+                                    hitSlop={8}
+                                >
+                                    <Ionicons name="trash-outline" size={18} color={Colors.live} />
+                                </Pressable>
+                            </View>
+                        </Pressable>
+                    ))
                 )}
-            </View>
+            </CollapsibleSection>
 
             <View style={styles.section}>
                 <Text style={styles.sectionTitle}>App Settings</Text>
@@ -412,6 +387,28 @@ export default function ProfileScreen() {
             </View>
         </Modal>
         </>
+    );
+}
+
+function CollapsibleSection({
+    title,
+    expanded,
+    onToggle,
+    children,
+}: {
+    title: string;
+    expanded: boolean;
+    onToggle: () => void;
+    children: ReactNode;
+}) {
+    return (
+        <View style={styles.section}>
+            <Pressable style={styles.sectionHeader} onPress={onToggle}>
+                <Text style={styles.sectionTitle}>{title}</Text>
+                <Ionicons name={expanded ? 'chevron-up' : 'chevron-down'} size={20} color={Colors.textPrimary} />
+            </Pressable>
+            {expanded && <View style={styles.sectionBody}>{children}</View>}
+        </View>
     );
 }
 

@@ -10,35 +10,75 @@ export class ApiError extends Error {
     }
 }
 
+function buildRequestHeaders(
+    hasBody: boolean,
+    token: string | undefined,
+    extraHeaders: HeadersInit | undefined
+): HeadersInit {
+    const headers: Record<string, string> = {};
+
+    if (hasBody) {
+        headers['Content-Type'] = 'application/json';
+    }
+
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    return { ...headers, ...extraHeaders };
+}
+
+async function readErrorMessage(res: Response): Promise<string> {
+    try {
+        const body = await res.json();
+        return body.error ?? res.statusText;
+    } catch {
+        return res.statusText;
+    }
+}
+
 async function request<T>(path: string, options: RequestInit & { token?: string } = {}): Promise<T> {
     const { token, headers, ...rest } = options;
+    const hasBody = Boolean(rest.body);
 
     const res = await fetch(`${API_URL}${path}`, {
         ...rest,
-        headers: {
-            ...(rest.body ? { 'Content-Type': 'application/json' } : {}),
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            ...headers,
-        },
+        headers: buildRequestHeaders(hasBody, token, headers),
     });
 
     if (!res.ok) {
-        let message = res.statusText;
-        try {
-            const body = await res.json();
-            message = body.error ?? message;
-        } catch {
-        }
+        const message = await readErrorMessage(res);
         throw new ApiError(res.status, message);
     }
 
-    if (res.status === 204) return undefined as T;
+    const hasNoContent = res.status === 204;
+    if (hasNoContent) {
+        return undefined as T;
+    }
+
     return res.json();
 }
 
 export function resolveApiUrl(path: string): string {
-    if (/^https?:\/\//.test(path)) return path;
-    return `${API_URL.replace(/\/api\/?$/, '')}${path}`;
+    const isAbsoluteUrl = /^https?:\/\//.test(path);
+    if (isAbsoluteUrl) {
+        return path;
+    }
+
+    const baseUrlWithoutApiSuffix = API_URL.replace(/\/api\/?$/, '');
+    return `${baseUrlWithoutApiSuffix}${path}`;
+}
+
+function getMimeTypeForExtension(extension: string): string {
+    if (extension === 'png') {
+        return 'image/png';
+    }
+
+    if (extension === 'webp') {
+        return 'image/webp';
+    }
+
+    return 'image/jpeg';
 }
 
 export type User = {
@@ -103,10 +143,14 @@ export type AppNotification = { message: string; action: string };
 
 export const api = {
     auth: {
-        register: (name: string, email: string, password: string) =>
-            request<AuthResponse>('/auth/register', { method: 'POST', body: JSON.stringify({ name, email, password }) }),
-        login: (email: string, password: string) =>
-            request<AuthResponse>('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }),
+        register: (name: string, email: string, password: string) => {
+            const body = JSON.stringify({ name, email, password });
+            return request<AuthResponse>('/auth/register', { method: 'POST', body });
+        },
+        login: (email: string, password: string) => {
+            const body = JSON.stringify({ email, password });
+            return request<AuthResponse>('/auth/login', { method: 'POST', body });
+        },
         me: (token: string) => request<User>('/auth/me', { token }),
         updateProfile: (token: string, payload: ProfileUpdatePayload) =>
             request<User>('/auth/me', { method: 'PUT', token, body: JSON.stringify(payload) }),
@@ -139,8 +183,9 @@ export const api = {
     uploads: {
         upload: async (token: string, fileUri: string): Promise<{ url: string }> => {
             const filename = fileUri.split('/').pop() ?? 'photo.jpg';
-            const ext = (/\.(\w+)$/.exec(filename)?.[1] ?? 'jpg').toLowerCase();
-            const mimeType = ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : 'image/jpeg';
+            const extensionMatch = /\.(\w+)$/.exec(filename);
+            const extension = (extensionMatch?.[1] ?? 'jpg').toLowerCase();
+            const mimeType = getMimeTypeForExtension(extension);
 
             const form = new FormData();
             form.append('image', { uri: fileUri, name: filename, type: mimeType } as unknown as Blob);
@@ -150,7 +195,11 @@ export const api = {
                 headers: { Authorization: `Bearer ${token}` },
                 body: form,
             });
-            if (!res.ok) throw new ApiError(res.status, 'upload failed');
+
+            if (!res.ok) {
+                throw new ApiError(res.status, 'upload failed');
+            }
+
             return res.json();
         },
     },

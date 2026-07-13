@@ -7,7 +7,7 @@ import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Platform, Pressable, StyleSheet, Text } from 'react-native';
 
-const POLL_INTERVAL_MS = 5000;
+const POLL_INTERVAL_MS = 500;
 
 export default function NotificationBanner() {
     const { token } = useAuth();
@@ -15,13 +15,17 @@ export default function NotificationBanner() {
     const slideAnim = useRef(new Animated.Value(-200)).current;
 
     useEffect(() => {
-        if (!token) return;
+        if (!token) {
+            return;
+        }
 
         let cancelled = false;
         const poll = async () => {
             try {
                 const { notification: incoming } = await api.notifications.poll(token);
-                if (!cancelled && incoming) {
+
+                const shouldShowIncoming = !cancelled && incoming;
+                if (shouldShowIncoming) {
                     setNotification(incoming);
                 }
             } catch {
@@ -47,14 +51,21 @@ export default function NotificationBanner() {
     const dismiss = () => setNotification(null);
 
     const handlePress = () => {
-        if (!notification) return;
+        if (!notification) {
+            return;
+        }
+
         dismiss();
-        if (notification.action === 'checkup') {
+
+        const shouldNavigateToCheckup = notification.action === 'checkup';
+        if (shouldNavigateToCheckup) {
             router.push('/checkup');
         }
     };
 
-    if (!notification) return null;
+    if (!notification) {
+        return null;
+    }
 
     return (
         <Animated.View style={[styles.container, { transform: [{ translateY: slideAnim }] }]}>

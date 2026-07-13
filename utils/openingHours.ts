@@ -11,15 +11,58 @@ function toMinutes(time: string): number {
     return hours * 60 + minutes;
 }
 
-// Minutes from `fromMinutes` until the next occurrence of `targetMinutes`,
-// wrapping around midnight (always in [0, MINUTES_PER_DAY)).
+
 function minutesUntil(targetMinutes: number, fromMinutes: number): number {
-    return ((targetMinutes - fromMinutes) % MINUTES_PER_DAY + MINUTES_PER_DAY) % MINUTES_PER_DAY;
+    const rawDifference = targetMinutes - fromMinutes;
+
+    if (rawDifference < 0) {
+        return rawDifference + MINUTES_PER_DAY;
+    }
+
+    return rawDifference;
 }
 
 function formatRelative(minutes: number): string {
-    if (minutes < 60) return `${minutes}m`;
-    return `${Math.round(minutes / 60)}h`;
+    const isUnderAnHour = minutes < 60;
+
+    if (isUnderAnHour) {
+        return `${minutes}m`;
+    }
+
+    const hours = Math.round(minutes / 60);
+    return `${hours}h`;
+}
+
+function isCurrentlyOpen(nowMinutes: number, openMinutes: number, closeMinutes: number): boolean {
+    const spansMidnight = closeMinutes <= openMinutes;
+
+    if (spansMidnight) {
+        return nowMinutes >= openMinutes || nowMinutes < closeMinutes;
+    }
+
+    return nowMinutes >= openMinutes && nowMinutes < closeMinutes;
+}
+
+function buildStatusLabel(
+    isOpen: boolean,
+    isSoon: boolean,
+    minutesUntilChange: number,
+    opensAt: string,
+    closesAt: string
+): string {
+    if (isOpen && isSoon) {
+        return `Closes in ${formatRelative(minutesUntilChange)}`;
+    }
+
+    if (isOpen && !isSoon) {
+        return `Closes at ${closesAt}`;
+    }
+
+    if (!isOpen && isSoon) {
+        return `Opens in ${formatRelative(minutesUntilChange)}`;
+    }
+
+    return `Opens at ${opensAt}`;
 }
 
 export function getOpeningStatus(
@@ -27,30 +70,26 @@ export function getOpeningStatus(
     closesAt?: string | null,
     now: Date = new Date()
 ): OpeningStatus | null {
-    if (!opensAt || !closesAt) return null;
+    const hasNoOpeningHours = !opensAt || !closesAt;
+    if (hasNoOpeningHours) {
+        return null;
+    }
 
     const openMinutes = toMinutes(opensAt);
     const closeMinutes = toMinutes(closesAt);
     const nowMinutes = now.getHours() * 60 + now.getMinutes();
 
-    // closesAt <= opensAt means the place stays open past midnight (e.g. 18:00 - 02:00).
-    const spansMidnight = closeMinutes <= openMinutes;
-    const isOpen = spansMidnight
-        ? nowMinutes >= openMinutes || nowMinutes < closeMinutes
-        : nowMinutes >= openMinutes && nowMinutes < closeMinutes;
+    const isOpen = isCurrentlyOpen(nowMinutes, openMinutes, closeMinutes);
 
-    const minutesUntilChange = isOpen
-        ? minutesUntil(closeMinutes, nowMinutes)
-        : minutesUntil(openMinutes, nowMinutes);
+    let minutesUntilChange: number;
+    if (isOpen) {
+        minutesUntilChange = minutesUntil(closeMinutes, nowMinutes);
+    } else {
+        minutesUntilChange = minutesUntil(openMinutes, nowMinutes);
+    }
 
     const isSoon = minutesUntilChange <= SOON_THRESHOLD_MINUTES;
-    const label = isOpen
-        ? isSoon
-            ? `Closes in ${formatRelative(minutesUntilChange)}`
-            : `Closes at ${closesAt}`
-        : isSoon
-            ? `Opens in ${formatRelative(minutesUntilChange)}`
-            : `Opens at ${opensAt}`;
+    const label = buildStatusLabel(isOpen, isSoon, minutesUntilChange, opensAt, closesAt);
 
     return { isOpen, label };
 }

@@ -2,11 +2,10 @@ import Colors from '@/constants/Colors';
 import crowdLevels from '@/constants/crowdLevels';
 import Typography from '@/constants/Typography';
 import { NoiseLevel } from '@/context/UserProfileContext';
-import { Workplace } from '@/utils/api';
 import { Ionicons } from '@expo/vector-icons';
 import Slider from '@react-native-community/slider';
-import { router, useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
+import { router } from 'expo-router';
+import { ComponentProps, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 const NOISE_LABELS: Record<NoiseLevel, string> = {
@@ -19,10 +18,62 @@ const NOISE_LABELS: Record<NoiseLevel, string> = {
 
 const CROWD_KEYS = Object.keys(crowdLevels);
 
-export default function CheckUpScreen() {
-    const { workplace } = useLocalSearchParams<{ workplace?: string }>();
-    const parsedWorkplace = workplace ? (JSON.parse(workplace) as Workplace) : null;
+const MOCK_WORKPLACE_NAME = 'Workplace in Frankfurt';
 
+function SliderSection({
+    title,
+    valueLabel,
+    valueColor,
+    valueIcon,
+    minimumValue,
+    maximumValue,
+    value,
+    onValueChange,
+    tintColor,
+    lowLabel,
+    highLabel,
+}: {
+    title: string;
+    valueLabel: string;
+    valueColor: string;
+    valueIcon?: ComponentProps<typeof Ionicons>['name'];
+    minimumValue: number;
+    maximumValue: number;
+    value: number;
+    onValueChange: (value: number) => void;
+    tintColor: string;
+    lowLabel: string;
+    highLabel: string;
+}) {
+    return (
+        <View style={styles.section}>
+            <View style={styles.sliderHeader}>
+                <Text style={styles.sectionTitle}>{title}</Text>
+                <View style={styles.crowdFeedback}>
+                    {valueIcon && <Ionicons name={valueIcon} size={16} color={valueColor} />}
+                    <Text style={[styles.sliderValue, { color: valueColor }]}>{valueLabel}</Text>
+                </View>
+            </View>
+            <Slider
+                style={styles.slider}
+                minimumValue={minimumValue}
+                maximumValue={maximumValue}
+                step={1}
+                value={value}
+                onValueChange={onValueChange}
+                minimumTrackTintColor={tintColor}
+                maximumTrackTintColor="#ccc"
+                thumbTintColor={tintColor}
+            />
+            <View style={styles.sliderEndLabels}>
+                <Text style={styles.sliderEndLabel}>{lowLabel}</Text>
+                <Text style={styles.sliderEndLabel}>{highLabel}</Text>
+            </View>
+        </View>
+    );
+}
+
+export default function CheckUpScreen() {
     const [noiseLevel, setNoiseLevel] = useState<NoiseLevel>(3);
     const [crowdIndex, setCrowdIndex] = useState(0);
     const [showThanksToast, setShowThanksToast] = useState(false);
@@ -34,8 +85,6 @@ export default function CheckUpScreen() {
     };
 
     const handleSubmit = () => {
-        // TODO: send { workplaceId: parsedWorkplace?.id, noiseLevel, crowdedness: CROWD_KEYS[crowdIndex] }
-        // to the backend once a live-data endpoint exists.
         setShowThanksToast(true);
         setTimeout(() => {
             setShowThanksToast(false);
@@ -49,9 +98,7 @@ export default function CheckUpScreen() {
             <View style={styles.header}>
                 <View style={styles.headerTextGroup}>
                     <Text style={styles.headerTitle}>Quick CheckUp</Text>
-                    <Text style={styles.headerSubtitle}>
-                        {parsedWorkplace ? parsedWorkplace.title : 'How is it right now?'}
-                    </Text>
+                    <Text style={styles.headerSubtitle}>{MOCK_WORKPLACE_NAME}</Text>
                 </View>
                 <Pressable onPress={handleClose} style={styles.closeButton} hitSlop={8}>
                     <Ionicons name="close" size={26} color={Colors.textPrimary} />
@@ -64,56 +111,32 @@ export default function CheckUpScreen() {
                     users know what to expect before they arrive.
                 </Text>
 
-                <View style={styles.section}>
-                    <View style={styles.sliderHeader}>
-                        <Text style={styles.sectionTitle}>Noise Level</Text>
-                        <Text style={styles.sliderValue}>
-                            {NOISE_LABELS[noiseLevel]} ({noiseLevel}/5)
-                        </Text>
-                    </View>
-                    <Slider
-                        style={styles.slider}
-                        minimumValue={1}
-                        maximumValue={5}
-                        step={1}
-                        value={noiseLevel}
-                        onValueChange={(value) => setNoiseLevel(value as NoiseLevel)}
-                        minimumTrackTintColor={Colors.primary}
-                        maximumTrackTintColor="#ccc"
-                        thumbTintColor={Colors.primary}
-                    />
-                    <View style={styles.sliderEndLabels}>
-                        <Text style={styles.sliderEndLabel}>Quiet</Text>
-                        <Text style={styles.sliderEndLabel}>Loud</Text>
-                    </View>
-                </View>
+                <SliderSection
+                    title="Noise Level"
+                    valueLabel={`${NOISE_LABELS[noiseLevel]} (${noiseLevel}/5)`}
+                    valueColor={Colors.primary}
+                    minimumValue={1}
+                    maximumValue={5}
+                    value={noiseLevel}
+                    onValueChange={(value) => setNoiseLevel(value as NoiseLevel)}
+                    tintColor={Colors.primary}
+                    lowLabel="Quiet"
+                    highLabel="Loud"
+                />
 
-                <View style={styles.section}>
-                    <View style={styles.sliderHeader}>
-                        <Text style={styles.sectionTitle}>Crowdedness</Text>
-                        <View style={styles.crowdFeedback}>
-                            <Ionicons name={currentCrowd.icon} size={16} color={currentCrowd.color} />
-                            <Text style={[styles.sliderValue, { color: currentCrowd.color }]}>
-                                {currentCrowd.label}
-                            </Text>
-                        </View>
-                    </View>
-                    <Slider
-                        style={styles.slider}
-                        minimumValue={0}
-                        maximumValue={CROWD_KEYS.length - 1}
-                        step={1}
-                        value={crowdIndex}
-                        onValueChange={setCrowdIndex}
-                        minimumTrackTintColor={currentCrowd.color}
-                        maximumTrackTintColor="#ccc"
-                        thumbTintColor={currentCrowd.color}
-                    />
-                    <View style={styles.sliderEndLabels}>
-                        <Text style={styles.sliderEndLabel}>Empty</Text>
-                        <Text style={styles.sliderEndLabel}>Very crowded</Text>
-                    </View>
-                </View>
+                <SliderSection
+                    title="Crowdedness"
+                    valueLabel={currentCrowd.label}
+                    valueColor={currentCrowd.color}
+                    valueIcon={currentCrowd.icon}
+                    minimumValue={0}
+                    maximumValue={CROWD_KEYS.length - 1}
+                    value={crowdIndex}
+                    onValueChange={setCrowdIndex}
+                    tintColor={currentCrowd.color}
+                    lowLabel="Empty"
+                    highLabel="Very crowded"
+                />
             </ScrollView>
 
             <View style={styles.footer}>

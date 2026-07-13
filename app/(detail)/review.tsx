@@ -22,10 +22,32 @@ export default function ReviewScreen() {
   const allowRemove = useRef(false);
   const { addReview, updateReview } = useWorkplaces();
 
-  const hasUnsavedChanges = isEditMode
-    ? rating !== editingReview.rating || comment !== editingReview.comment
-    : rating !== 4 || comment.trim().length > 0;
+  function computeHasUnsavedChanges() {
+    if (isEditMode) {
+      const ratingChanged = rating !== editingReview.rating;
+      const commentChanged = comment !== editingReview.comment;
+      return ratingChanged || commentChanged;
+    }
 
+    const ratingChangedFromDefault = rating !== 4;
+    const hasComment = comment.trim().length > 0;
+    return ratingChangedFromDefault || hasComment;
+  }
+
+  const hasUnsavedChanges = computeHasUnsavedChanges();
+
+
+  function getSubmitButtonLabel() {
+    if (isSubmitting) {
+      return 'Submitting...';
+    }
+
+    if (isEditMode) {
+      return 'Save Changes';
+    }
+
+    return 'Submit Review';
+  }
 
   const handleSubmit = async () => {
     if (!parsedWorkplace) {
@@ -96,8 +118,6 @@ export default function ReviewScreen() {
           text: 'Save',
           onPress: () => {
             if (!comment.trim()) {
-              // iOS silently drops an Alert triggered right as the previous one is
-              // still dismissing, so give it a moment before showing the follow-up.
               setTimeout(() => {
                 Alert.alert('Add a comment', 'Please write a comment before saving your review.');
               }, 400);
@@ -148,7 +168,7 @@ export default function ReviewScreen() {
           {error && <Text style={styles.errorText}>{error}</Text>}
 
           <PrimaryButton
-            label={isSubmitting ? 'Submitting...' : isEditMode ? 'Save Changes' : 'Submit Review'}
+            label={getSubmitButtonLabel()}
             onPress={handleSubmit}
           />
         </ScrollView>

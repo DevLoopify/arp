@@ -18,7 +18,6 @@ const ListView = ({
   onSelectWorkplace,
   onSheetIndexChange,
 }) => {
-  const sheetRef = useRef(null);
   const scrollRef = useRef(null);
 
   const { workplaces } = useWorkplaces();
@@ -39,32 +38,32 @@ const ListView = ({
   );
 
   const sortedWorkplaces = useMemo(() => {
-    const list = userLocation
-      ? [...filteredWorkplaces].sort(
-          (a, b) =>
-            getDistanceKm(userLocation, a) -
-            getDistanceKm(userLocation, b)
-        )
-      : filteredWorkplaces;
+    let list = filteredWorkplaces;
 
-    if (selectedWorkplaceId == null) {
+    if (userLocation) {
+      list = [...filteredWorkplaces].sort(
+        (a, b) => getDistanceKm(userLocation, a) - getDistanceKm(userLocation, b)
+      );
+    }
+
+    const noWorkplaceSelected = selectedWorkplaceId == null;
+    if (noWorkplaceSelected) {
       return list;
     }
 
-    const selected = list.find(
+    const selectedWorkplace = list.find(
       (workplace) => workplace.id === selectedWorkplaceId
     );
 
-    if (!selected) {
+    if (!selectedWorkplace) {
       return list;
     }
 
-    return [
-      selected,
-      ...list.filter(
-        (workplace) => workplace.id !== selectedWorkplaceId
-      ),
-    ];
+    const remainingWorkplaces = list.filter(
+      (workplace) => workplace.id !== selectedWorkplaceId
+    );
+
+    return [selectedWorkplace, ...remainingWorkplaces];
   }, [filteredWorkplaces, userLocation, selectedWorkplaceId]);
 
   useEffect(() => {
@@ -93,7 +92,6 @@ const ListView = ({
   return (
     <View style={styles.container}>
       <BottomSheet
-        ref={sheetRef}
         index={1}
         snapPoints={snapPoints}
         enableDynamicSizing={false}

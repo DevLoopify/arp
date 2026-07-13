@@ -13,7 +13,7 @@ const fallbackRegion = {
 };
 
 const METERS_PER_DEGREE_LAT = 111320;
-const CIRCLE_PADDING_FACTOR = 1.8; // keeps the circle comfortably inside the viewport
+const CIRCLE_PADDING_FACTOR = 1.8; 
 
 function regionForRadius(latitude, longitude, radiusMeters) {
   const span = radiusMeters * 2 * CIRCLE_PADDING_FACTOR;
@@ -22,11 +22,28 @@ function regionForRadius(latitude, longitude, radiusMeters) {
   return { latitude, longitude, latitudeDelta, longitudeDelta };
 }
 
-// Shifts the map's center southward so the point renders higher up on screen,
-// in the middle of whatever portion isn't covered by an overlay (e.g. a bottom sheet).
 function applyCenterOffset(region, centerOffsetRatio) {
-  if (!centerOffsetRatio) return region;
+  if (!centerOffsetRatio) {
+    return region;
+  }
+
   return { ...region, latitude: region.latitude - region.latitudeDelta * centerOffsetRatio };
+}
+
+function computeInitialRegion(center, radius, centerOffsetRatio) {
+  let region;
+
+  if (radius) {
+    region = regionForRadius(center.latitude, center.longitude, radius);
+  } else {
+    region = {
+      ...center,
+      latitudeDelta: fallbackRegion.latitudeDelta,
+      longitudeDelta: fallbackRegion.longitudeDelta,
+    };
+  }
+
+  return applyCenterOffset(region, centerOffsetRatio);
 }
 
 export default function MapContainer({
@@ -46,23 +63,19 @@ export default function MapContainer({
   );
   const center = userLocation ?? fallbackRegion;
 
-  const initialRegion = applyCenterOffset(
-    radius
-      ? regionForRadius(center.latitude, center.longitude, radius)
-      : {
-          ...center,
-          latitudeDelta: fallbackRegion.latitudeDelta,
-          longitudeDelta: fallbackRegion.longitudeDelta,
-        },
-    centerOffsetRatio
-  );
+  const initialRegion = computeInitialRegion(center, radius, centerOffsetRatio);
 
   useEffect(() => {
-    if (!radius) return;
-    mapRef.current?.animateToRegion(
-      applyCenterOffset(regionForRadius(center.latitude, center.longitude, radius), centerOffsetRatio),
-      300
+    if (!radius) {
+      return;
+    }
+
+    const region = applyCenterOffset(
+      regionForRadius(center.latitude, center.longitude, radius),
+      centerOffsetRatio
     );
+
+    mapRef.current?.animateToRegion(region, 300);
   }, [radius, center.latitude, center.longitude, centerOffsetRatio]);
 
   return (

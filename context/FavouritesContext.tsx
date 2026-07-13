@@ -19,28 +19,47 @@ export function FavouritesProvider({ children }: { children: ReactNode }) {
             setFavouriteIds(new Set());
             return;
         }
-        api.favourites.list(token).then((ids) => setFavouriteIds(new Set(ids)));
+
+        const currentToken = token;
+
+        async function loadFavourites() {
+            const ids = await api.favourites.list(currentToken);
+            setFavouriteIds(new Set(ids));
+        }
+
+        loadFavourites();
     }, [token]);
 
     const toggleFavourite = useCallback(
         (id: number) => {
             if (!token) return;
 
-            setFavouriteIds((prev) => {
-                const next = new Set(prev);
-                if (next.has(id)) {
+            const currentToken = token;
+
+            function revertRemoval() {
+                setFavouriteIds((current) => new Set(current).add(id));
+            }
+
+            function revertAddition() {
+                setFavouriteIds((current) => {
+                    const reverted = new Set(current);
+                    reverted.delete(id);
+                    return reverted;
+                });
+            }
+
+            setFavouriteIds((previous) => {
+                const next = new Set(previous);
+                const isCurrentlyFavourite = next.has(id);
+
+                if (isCurrentlyFavourite) {
                     next.delete(id);
-                    api.favourites.remove(token, id).catch(() => setFavouriteIds((cur) => new Set(cur).add(id)));
+                    api.favourites.remove(currentToken, id).catch(revertRemoval);
                 } else {
                     next.add(id);
-                    api.favourites.add(token, id).catch(() =>
-                        setFavouriteIds((cur) => {
-                            const reverted = new Set(cur);
-                            reverted.delete(id);
-                            return reverted;
-                        })
-                    );
+                    api.favourites.add(currentToken, id).catch(revertAddition);
                 }
+
                 return next;
             });
         },

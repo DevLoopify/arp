@@ -22,24 +22,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        (async () => {
+        async function restoreSession() {
             const storedToken = await SecureStore.getItemAsync(TOKEN_KEY);
+
             if (!storedToken) {
                 setIsLoading(false);
                 return;
             }
+
             try {
                 const me = await api.auth.me(storedToken);
                 setToken(storedToken);
                 setUser(me);
             } catch (err) {
-                if (err instanceof ApiError && err.status === 401) {
+                const isExpiredToken = err instanceof ApiError && err.status === 401;
+                if (isExpiredToken) {
                     await SecureStore.deleteItemAsync(TOKEN_KEY);
                 }
             } finally {
                 setIsLoading(false);
             }
-        })();
+        }
+
+        restoreSession();
     }, []);
 
     const login = useCallback(async (email: string, password: string) => {

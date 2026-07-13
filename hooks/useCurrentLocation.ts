@@ -1,14 +1,19 @@
+import { Coordinate } from '@/utils/geo';
 import * as Location from 'expo-location';
 import { useEffect, useState } from 'react';
 
 export default function useCurrentLocation() {
-    const [location, setLocation] = useState(null);
+    const [location, setLocation] = useState<Coordinate | null>(null);
     const [permissionGranted, setPermissionGranted] = useState(false);
 
     useEffect(() => {
-        (async () => {
+        async function loadCurrentLocation() {
             const { status } = await Location.requestForegroundPermissionsAsync();
-            if (status !== 'granted') return;
+            const permissionWasGranted = status === 'granted';
+
+            if (!permissionWasGranted) {
+                return;
+            }
 
             setPermissionGranted(true);
 
@@ -17,7 +22,9 @@ export default function useCurrentLocation() {
                 latitude: position.coords.latitude,
                 longitude: position.coords.longitude,
             });
-        })();
+        }
+
+        loadCurrentLocation();
     }, []);
 
     return { location, permissionGranted };

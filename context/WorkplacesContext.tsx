@@ -1,5 +1,6 @@
 import { useAuth } from '@/context/AuthContext';
 import { api, Review, Workplace } from '@/utils/api';
+import { Coordinate } from '@/utils/geo';
 import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
 export type NewWorkplaceEntry = {
@@ -9,7 +10,7 @@ export type NewWorkplaceEntry = {
     workMode: string;
     opensAt: string | null;
     closesAt: string | null;
-    location: { latitude: number; longitude: number };
+    location: Coordinate;
     photoUris: string[];
 };
 
@@ -20,7 +21,7 @@ export type WorkplaceEdit = {
     workMode: string;
     opensAt: string | null;
     closesAt: string | null;
-    location: { latitude: number; longitude: number };
+    location: Coordinate;
     existingImages: string[];
     newPhotoUris: string[];
 };
@@ -50,14 +51,25 @@ export function WorkplacesProvider({ children }: { children: ReactNode }) {
     }, []);
 
     useEffect(() => {
-        refresh().finally(() => setIsLoading(false));
+        async function loadInitialWorkplaces() {
+            try {
+                await refresh();
+            } finally {
+                setIsLoading(false);
+            }
+        }
+
+        loadInitialWorkplaces();
     }, [refresh]);
 
     const addWorkplace = useCallback(
         async (entry: NewWorkplaceEntry) => {
-            if (!token) throw new Error('You must be logged in to add a workplace.');
+            if (!token) {
+                throw new Error('You must be logged in to add a workplace.');
+            }
 
-            const uploaded = await Promise.all(entry.photoUris.map((uri) => api.uploads.upload(token, uri)));
+            const uploads = await Promise.all(entry.photoUris.map((uri) => api.uploads.upload(token, uri)));
+            const imageUrls = uploads.map((upload) => upload.url);
 
             const workplace = await api.workplaces.create(token, {
                 title: entry.name,
@@ -68,7 +80,7 @@ export function WorkplacesProvider({ children }: { children: ReactNode }) {
                 workMode: entry.workMode,
                 opensAt: entry.opensAt,
                 closesAt: entry.closesAt,
-                images: uploaded.map((u) => u.url),
+                images: imageUrls,
             });
 
             await refresh();
@@ -79,9 +91,13 @@ export function WorkplacesProvider({ children }: { children: ReactNode }) {
 
     const updateWorkplace = useCallback(
         async (id: number, entry: WorkplaceEdit) => {
-            if (!token) throw new Error('You must be logged in to edit a workplace.');
+            if (!token) {
+                throw new Error('You must be logged in to edit a workplace.');
+            }
 
-            const uploaded = await Promise.all(entry.newPhotoUris.map((uri) => api.uploads.upload(token, uri)));
+            const uploads = await Promise.all(entry.newPhotoUris.map((uri) => api.uploads.upload(token, uri)));
+            const newImageUrls = uploads.map((upload) => upload.url);
+            const allImageUrls = [...entry.existingImages, ...newImageUrls];
 
             const workplace = await api.workplaces.update(token, id, {
                 title: entry.name,
@@ -92,7 +108,7 @@ export function WorkplacesProvider({ children }: { children: ReactNode }) {
                 workMode: entry.workMode,
                 opensAt: entry.opensAt,
                 closesAt: entry.closesAt,
-                images: [...entry.existingImages, ...uploaded.map((u) => u.url)],
+                images: allImageUrls,
             });
 
             await refresh();
@@ -103,7 +119,10 @@ export function WorkplacesProvider({ children }: { children: ReactNode }) {
 
     const deleteWorkplace = useCallback(
         async (id: number) => {
-            if (!token) throw new Error('You must be logged in to delete a workplace.');
+            if (!token) {
+                throw new Error('You must be logged in to delete a workplace.');
+            }
+
             await api.workplaces.remove(token, id);
             await refresh();
         },
@@ -112,7 +131,10 @@ export function WorkplacesProvider({ children }: { children: ReactNode }) {
 
     const addReview = useCallback(
         async (workplaceId: number, payload: { rating: number; comment: string }) => {
-            if (!token) throw new Error('You must be logged in to add a review.');
+            if (!token) {
+                throw new Error('You must be logged in to add a review.');
+            }
+
             const review = await api.reviews.create(token, workplaceId, payload);
             await refresh();
             return review;
@@ -122,7 +144,10 @@ export function WorkplacesProvider({ children }: { children: ReactNode }) {
 
     const updateReview = useCallback(
         async (reviewId: number, payload: { rating: number; comment: string }) => {
-            if (!token) throw new Error('You must be logged in to edit a review.');
+            if (!token) {
+                throw new Error('You must be logged in to edit a review.');
+            }
+
             const review = await api.reviews.update(token, reviewId, payload);
             await refresh();
             return review;
@@ -132,7 +157,10 @@ export function WorkplacesProvider({ children }: { children: ReactNode }) {
 
     const deleteReview = useCallback(
         async (reviewId: number) => {
-            if (!token) throw new Error('You must be logged in to delete a review.');
+            if (!token) {
+                throw new Error('You must be logged in to delete a review.');
+            }
+
             await api.reviews.remove(token, reviewId);
             await refresh();
         },

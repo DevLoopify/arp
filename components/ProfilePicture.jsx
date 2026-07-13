@@ -12,7 +12,7 @@ import Animated, {
     withTiming,
 } from "react-native-reanimated";
 
-const { width, height } = Dimensions.get("window");
+const { width } = Dimensions.get("window");
 
 export default function ProfilePicture({ uri }) {
   const [opened, setOpened] = useState(false);

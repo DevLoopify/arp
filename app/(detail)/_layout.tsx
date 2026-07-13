@@ -10,7 +10,10 @@ export default function DetailLayout() {
   const parsedWorkplace = workplace ? JSON.parse(workplace) : null;
 
   const handleGetDirections = () => {
-    if (!parsedWorkplace) return;
+    if (!parsedWorkplace) {
+      return;
+    }
+
     openDirections(parsedWorkplace.latitude, parsedWorkplace.longitude, parsedWorkplace.title);
   };
 

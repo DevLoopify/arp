@@ -27,7 +27,6 @@ const screenHeight = Dimensions.get('window').height;
 
 const WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
-// Placeholder hours shown until workplaces have real ones on record.
 const MOCK_OPENS_AT = '09:00';
 const MOCK_CLOSES_AT = '18:00';
 
@@ -37,7 +36,10 @@ export default function DetailScreen(){
     const [showReviewToast, setShowReviewToast] = useState(false);
 
     useEffect(() => {
-        if (!reviewSubmitted) return;
+        if (!reviewSubmitted) {
+            return;
+        }
+
         setShowReviewToast(true);
         const timeout = setTimeout(() => setShowReviewToast(false), 1200);
         return () => clearTimeout(timeout);
@@ -50,11 +52,10 @@ export default function DetailScreen(){
     const liveCrowdedness = parsedWorkplace.crowdByHourToday?.[currentHour] ?? crowdedness;
     const crowdLevel = crowdLevels[liveCrowdedness];
     const lastUpdatedLabel = getLastUpdatedLabel();
-    const hasRealHours = Boolean(parsedWorkplace.opensAt && parsedWorkplace.closesAt);
     const opensAt = parsedWorkplace.opensAt ?? MOCK_OPENS_AT;
     const closesAt = parsedWorkplace.closesAt ?? MOCK_CLOSES_AT;
     const openingStatus = getOpeningStatus(opensAt, closesAt);
-    const todayIndex = (new Date().getDay() + 6) % 7; // Mon = 0 ... Sun = 6
+    const todayIndex = (new Date().getDay() + 6) % 7; 
     const handleShare = () => {
         const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${parsedWorkplace.latitude},${parsedWorkplace.longitude}`;
         Share.share({
@@ -316,12 +317,6 @@ const styles = StyleSheet.create({
     },
     openingStatusClosed: {
         color: Colors.live,
-    },
-    openingHoursNote: {
-        ...Typography.caption,
-        fontSize: 12,
-        color: Colors.textMuted,
-        fontStyle: 'italic',
     },
     openingHoursList: {
         gap: 6,
